@@ -42,7 +42,6 @@ testpaths = [
 ]
 
 [tool.ruff]
-src = ["src"]
 lint.select = ["E", "F", "I", "N", "W", "B", "C4", "SIM", "UP"]  # Enable various rule sets
 lint.ignore = ["E501"]  # Ignore specific rules if needed
 target-version = "py310"

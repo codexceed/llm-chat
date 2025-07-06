@@ -1,6 +1,7 @@
 import streamlit as st
-from chatbot.ui import render_sidebar, render_chat_interface
-from chatbot.chat import process_uploaded_file, generate_response
+
+from chatbot.chat import generate_response, process_uploaded_file
+from chatbot.ui import render_chat_interface, render_sidebar
 
 
 def main() -> None:
