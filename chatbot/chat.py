@@ -1,5 +1,6 @@
 import streamlit as st
 from openai import OpenAI
+
 from chatbot.config import settings
 
 client = OpenAI(

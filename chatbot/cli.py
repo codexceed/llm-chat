@@ -1,6 +1,7 @@
-import streamlit.web.cli as stcli
 import os
 import sys
+
+import streamlit.web.cli as stcli
 
 
 def main():
