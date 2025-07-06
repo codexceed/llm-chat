@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm-chat"
+version = "0.1.0"
+description = "A chatbot application that leverages LLMs served via OpenAI spec APIs."
+readme = "README.md"
+requires-python = ">=3.10,<4.0"  # More specific Python version range
+authors = [
+    { name = "Sarthak Joshi", email = "sarthak.joshi94@yahoo.in" },
+]
+license = { text = "MIT" }  # Added license specification
+keywords = ["chatbot", "streamlit", "ai"]  # Added keywords for better discoverability
+
+# Categorize dependencies by their purpose
+dependencies = [
+    "streamlit~=1.46.1",  # Specify minimum versions for security
+    "pydantic-settings~=2.0.0",
+    "openai~=1.93.0",
+]
+
+# Add optional dependencies for different use cases
+[project.optional-dependencies]
+dev = [
+    "pytest~=8.4.1",
+    "pytest-cov~=6.2.1",
+    "ruff~=0.12.2",
+    "pyright~=1.1.350",  # Replaced mypy with pyright
+]
+
+[project.scripts]
+chatbot = "chatbot.cli:main"
+
+# Add tool configurations
+[tool.pytest.ini_options]
+minversion = "8.4.1"
+addopts = "-ra -q --cov"
+testpaths = [
+    "tests",
+]
+
+[tool.ruff]
+src = ["src"]
+lint.select = ["E", "F", "I", "N", "W", "B", "C4", "SIM", "UP"]  # Enable various rule sets
+lint.ignore = ["E501"]  # Ignore specific rules if needed
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.pyright]  # Replaced mypy config with pyright config
+pythonVersion = "3.10"
+typeCheckingMode = "strict"
+reportMissingImports = true
+reportUnknownMemberType = true
+reportUnknownParameterType = true
+reportUnknownVariableType = true
+reportUnknownArgumentType = true
+reportPrivateUsage = "warning"
+reportUntypedFunctionDecorator = "warning"
