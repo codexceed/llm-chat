@@ -1,0 +1,11 @@
+[logger]
+# Level of logging: 'error', 'warning', 'info', or 'debug'.
+level = "debug"
+
+[global]
+# By default, Streamlit checks for package updates on startup.
+showWarningOnDirectExecution = true
+
+[theme]
+# The preset Streamlit theme that your custom theme inherits from.
+base = "dark"
