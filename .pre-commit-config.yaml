@@ -1,0 +1,91 @@
+# .pre-commit-config.yaml
+# Pre-commit configuration for Python projects
+# See https://pre-commit.com for more information
+
+repos:
+  # Ruff - Modern Python linter and formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.6
+    hooks:
+      - id: ruff
+        name: ruff (Python linter)
+        description: Run ruff linter with auto-fix
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+        name: ruff (Python formatter)
+        description: Run ruff formatter
+
+  # mypy - Static type checker
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.7.1
+    hooks:
+      - id: mypy
+        name: mypy (type checker)
+        description: Run mypy type checker
+        additional_dependencies: [
+          types-requests,
+          types-PyYAML,
+          types-toml,
+          types-setuptools,
+        ]
+        args: [--ignore-missing-imports]
+
+  # Bandit - Security linter
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        name: bandit (security linter)
+        description: Run bandit security linter
+        args: ["-c", "pyproject.toml"]
+        additional_dependencies: ["bandit[toml]"]
+
+  # Commitizen - Enforce conventional commits
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.12.0
+    hooks:
+      - id: commitizen
+        name: commitizen (commit message checker)
+        description: Check commit message format
+        stages: [commit-msg]
+
+  # Secrets detection
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+    -   id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        additional_dependencies: ['gibberish-detector']
+        exclude: |
+          (?x)^(
+            \.lock$|
+            \.min\.(js|css)$|
+            package-lock\.json$|
+            yarn\.lock$
+          )
+
+  # Jupyter notebook cleaning (if using notebooks)
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.9.1
+    hooks:
+      - id: nbqa-ruff
+        name: nbqa-ruff (notebook linter)
+        description: Run ruff on Jupyter notebooks
+        args: [--fix]
+      - id: nbqa-ruff-format
+        name: nbqa-ruff-format (notebook formatter)
+        description: Format Jupyter notebooks
+
+# Global configuration
+default_stages: [pre-commit]
+fail_fast: false
+minimum_pre_commit_version: '3.0.0'
+
+# CI configuration
+ci:
+  autoupdate_schedule: weekly
+  autoupdate_commit_msg: 'chore: update pre-commit hooks'
+  skip: [
+    # Skip slow hooks in CI
+    detect-secrets,
+  ]

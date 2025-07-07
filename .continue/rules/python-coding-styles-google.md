@@ -5,7 +5,9 @@ name: Google Python Coding Styles
 # Google Python Style Guide
 
 - **Python Language Rules**
-  - Use pylint as a code linter
+  - For code linting:
+    - Use ruff for formatting.
+    - mypy or pyright for static analysis and type checking.
   - Use imports for packages and modules only, not individual classes or functions
   - Import each module using full pathname location
   - Use exceptions for exceptional conditions, not control flow

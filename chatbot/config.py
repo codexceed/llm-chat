@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     repetition_penalty: float = 1.1
     upload_dir: str = "uploads"
     page_title: str = "My Custom Chatbot"
-    host: str = "0.0.0.0"
+    host: str = "127.0.0.1"
     port: int = 8080
     debug: bool = True
 
