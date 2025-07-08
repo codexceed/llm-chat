@@ -45,6 +45,7 @@ def stream_response() -> Iterator[str]:
         stream=True,
         temperature=settings.temperature,
         max_tokens=settings.max_tokens,
+        seed=settings.seed,
     )
     for chunk in stream:
         yield chunk.choices[0].delta.content or ""

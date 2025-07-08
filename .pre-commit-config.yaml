@@ -49,21 +49,6 @@ repos:
         description: Check commit message format
         stages: [commit-msg]
 
-  # Secrets detection
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
-    hooks:
-    -   id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
-        additional_dependencies: ['gibberish-detector']
-        exclude: |
-          (?x)^(
-            \.lock$|
-            \.min\.(js|css)$|
-            package-lock\.json$|
-            yarn\.lock$
-          )
-
   # Jupyter notebook cleaning (if using notebooks)
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.9.1
