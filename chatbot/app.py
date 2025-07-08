@@ -1,6 +1,7 @@
 import streamlit as st
 
 from chatbot.chat import generate_response, process_uploaded_file
+from chatbot.types import Message
 from chatbot.ui import render_chat_interface, render_sidebar
 
 
@@ -13,7 +14,7 @@ def main() -> None:
         process_uploaded_file(uploaded_file)
 
     if prompt := render_chat_interface():
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.messages.append(Message(role="user", content=prompt))
         with st.chat_message("user"):
             st.markdown(prompt)
         generate_response()

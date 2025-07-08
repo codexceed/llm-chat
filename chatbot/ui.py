@@ -1,9 +1,11 @@
 import streamlit as st
+from streamlit.runtime import uploaded_file_manager
 
 from chatbot.config import settings
+from chatbot.types import Message
 
 
-def render_sidebar():
+def render_sidebar() -> uploaded_file_manager.UploadedFile | None:
     """Renders the sidebar with model settings, file uploader, and chat controls."""
     st.sidebar.title("Model Settings")
     settings.model_name = st.sidebar.text_input("Model", settings.model_name)
@@ -16,7 +18,7 @@ def render_sidebar():
     )
 
     st.sidebar.title("File Upload")
-    uploaded_file = st.sidebar.file_uploader(
+    uploaded_file: uploaded_file_manager.UploadedFile | None = st.sidebar.file_uploader(
         "Upload a file", type=["txt", "md", "py", "json", "csv"]
     )
 
@@ -27,12 +29,13 @@ def render_sidebar():
     return uploaded_file
 
 
-def render_chat_interface():
+def render_chat_interface() -> str | None:
     """Renders the chat interface, including the chat history and input."""
     st.title(settings.page_title)
 
     if "messages" not in st.session_state:
-        st.session_state.messages = []
+        messages_init: list[Message] = []
+        st.session_state.messages = messages_init
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):

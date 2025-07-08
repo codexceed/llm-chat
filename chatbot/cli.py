@@ -4,7 +4,7 @@ import sys
 import streamlit.web.cli as stcli
 
 
-def main():
+def main() -> None:
     """Entry point for the chatbot CLI."""
     # Get the path to the Streamlit app
     app_path = os.path.join(os.path.dirname(__file__), "app.py")
