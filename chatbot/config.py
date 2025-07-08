@@ -2,12 +2,15 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    """Configuration settings for the chatbot application."""
+
     openai_api_base: str = "http://localhost:8000/v1"
     openai_api_key: str = "not-needed"
     model_name: str = "Qwen/Qwen2.5-Coder-14B-Instruct-AWQ"
     temperature: float = 0.7
     max_tokens: int = 2000
     repetition_penalty: float = 1.1
+    seed: int = 1234
     upload_dir: str = "uploads"
     page_title: str = "My Custom Chatbot"
     host: str = "127.0.0.1"

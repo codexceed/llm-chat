@@ -45,21 +45,21 @@ services:
     ipc: host
     environment:
       # Debug environment variables for CUDA errors
-      - CUDA_LAUNCH_BLOCKING=1
-      - TORCH_USE_CUDA_DSA=1
+      # - CUDA_LAUNCH_BLOCKING=1
+      # - TORCH_USE_CUDA_DSA=1
       
       # Alternative attention backends (uncomment to try different ones)
       # - VLLM_ATTENTION_BACKEND=FLASHINFER
       # - VLLM_ATTENTION_BACKEND=FLASH_ATTN
       
       # Logging and debugging
-      - VLLM_LOGGING_LEVEL=DEBUG
+      # - VLLM_LOGGING_LEVEL=DEBUG
       - VLLM_USE_V1=0
       
     command: [
       "--model", "/models/Qwen/Qwen2.5-Coder-7B-Instruct-AWQ",
       "--served-model-name", "Qwen/Qwen2.5-Coder-7B-Instruct-AWQ",
-      "--max-model-len", "16000",
+      "--max-model-len", "32000"
     ]
     deploy:
       resources:

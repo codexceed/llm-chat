@@ -16,6 +16,7 @@ def render_sidebar() -> uploaded_file_manager.UploadedFile | None:
     settings.repetition_penalty = st.sidebar.slider(
         "Repetition Penalty", 1.0, 2.0, settings.repetition_penalty
     )
+    settings.seed = st.sidebar.number_input("Seed", 0, 1000000, settings.seed)
 
     st.sidebar.title("File Upload")
     uploaded_file: uploaded_file_manager.UploadedFile | None = st.sidebar.file_uploader(
