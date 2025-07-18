@@ -49,18 +49,6 @@ repos:
         description: Check commit message format
         stages: [commit-msg]
 
-  # Jupyter notebook cleaning (if using notebooks)
-  - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.9.1
-    hooks:
-      - id: nbqa-ruff
-        name: nbqa-ruff (notebook linter)
-        description: Run ruff on Jupyter notebooks
-        args: [--fix]
-      - id: nbqa-ruff-format
-        name: nbqa-ruff-format (notebook formatter)
-        description: Format Jupyter notebooks
-
 # Global configuration
 default_stages: [pre-commit]
 fail_fast: false

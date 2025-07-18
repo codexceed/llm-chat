@@ -41,25 +41,25 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - "C:/models/Qwen/Qwen2.5-Coder-7B-Instruct-AWQ:/models/Qwen/Qwen2.5-Coder-7B-Instruct-AWQ"
+      - "/mnt/c/models/Qwen/Qwen2.5-Coder-7B-Instruct-AWQ/:/models/Qwen/Qwen2.5-Coder-7B-Instruct-AWQ"
     ipc: host
-    environment:
-      # Debug environment variables for CUDA errors
-      # - CUDA_LAUNCH_BLOCKING=1
-      # - TORCH_USE_CUDA_DSA=1
+    # environment:
+    #   # Debug environment variables for CUDA errors
+    #   # - CUDA_LAUNCH_BLOCKING=1
+    #   # - TORCH_USE_CUDA_DSA=1
       
-      # Alternative attention backends (uncomment to try different ones)
-      # - VLLM_ATTENTION_BACKEND=FLASHINFER
-      # - VLLM_ATTENTION_BACKEND=FLASH_ATTN
+    #   # Alternative attention backends (uncomment to try different ones)
+    #   # - VLLM_ATTENTION_BACKEND=FLASHINFER
+    #   # - VLLM_ATTENTION_BACKEND=FLASH_ATTN
       
-      # Logging and debugging
-      # - VLLM_LOGGING_LEVEL=DEBUG
-      - VLLM_USE_V1=0
+    #   # Logging and debugging
+    #   # - VLLM_LOGGING_LEVEL=DEBUG
+    #   # - VLLM_USE_V1=0
       
     command: [
       "--model", "/models/Qwen/Qwen2.5-Coder-7B-Instruct-AWQ",
       "--served-model-name", "Qwen/Qwen2.5-Coder-7B-Instruct-AWQ",
-      "--max-model-len", "32000"
+      "--max-model-len=32000", "--max-num-batched-token=16000"
     ]
     deploy:
       resources:
@@ -68,4 +68,25 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-  
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: always
+    container_name: qdrant
+    ports:
+      - 6333:6333
+      - 6334:6334
+    expose:
+      - 6333
+      - 6334
+      - 6335
+    configs:
+      - source: qdrant_config
+        target: /qdrant/config/production.yaml
+    volumes:
+      - "./storage:/qdrant/storage"
+
+configs:
+  qdrant_config:
+    content: |
+      log_level: INFO

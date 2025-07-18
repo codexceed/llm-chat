@@ -1,23 +1,25 @@
 import streamlit as st
 
-from chatbot.chat import generate_response, process_uploaded_file
+from chatbot import chat, ui
 from chatbot.types import Message
-from chatbot.ui import render_chat_interface, render_sidebar
 
 
 def main() -> None:
     """Main function for the Streamlit chatbot app."""
+    st.logo("assets/rand_logo.jpg")
     st.set_page_config(layout="wide")
-    uploaded_file = render_sidebar()
+    ui.render_sidebar()
 
-    if uploaded_file is not None:
-        process_uploaded_file(uploaded_file)
+    if chat_input := ui.render_chat_interface():
+        prompt, uploaded_files = chat_input.text, chat_input.files
+        if uploaded_files:
+            chat.process_uploaded_files(uploaded_files)
 
-    if prompt := render_chat_interface():
         st.session_state.messages.append(Message(role="user", content=prompt))
         with st.chat_message("user"):
             st.markdown(prompt)
-        generate_response()
+        with st.chat_message("assistant"):
+            chat.generate_response(st.session_state.messages)
 
 
 if __name__ == "__main__":

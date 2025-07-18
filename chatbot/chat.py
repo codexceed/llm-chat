@@ -1,60 +1,77 @@
 from collections.abc import Iterator
 
 import openai
+from openai.types import chat as chat_types
 import streamlit as st
 from streamlit.runtime import uploaded_file_manager
 
-from chatbot.config import settings
+from chatbot import config
+from chatbot.rag import RAG
 from chatbot.types import Message
 
 client = openai.OpenAI(
-    api_key=settings.openai_api_key,
-    base_url=settings.openai_api_base,
+    api_key=config.settings.openai_api_key,
+    base_url=config.settings.openai_api_base,
 )
 
+# Initialize RAG processor
+rag_processor = RAG()
 
-def process_uploaded_file(
-    uploaded_file: uploaded_file_manager.UploadedFile | None,
+
+def process_uploaded_files(
+    uploaded_files: list[uploaded_file_manager.UploadedFile],
 ) -> None:
-    """Reads the content of the uploaded file and adds it to the chat history."""
-    if uploaded_file is not None:
-        try:
-            string_data: str = uploaded_file.getvalue().decode("utf-8")
-            st.session_state.messages.append(
-                Message(
-                    role="user",
-                    content=f"Uploaded file: {uploaded_file.name}\n\n{string_data}",
-                )
-            )
-        except Exception as e:
-            st.error(f"Error processing file: {e}")
+    """Process and index uploaded files for RAG
+
+    Args:
+        uploaded_file: List of uploaded files from the chat input.
+    """
+    rag_processor.process_uploaded_files(uploaded_files)
 
 
-def stream_response() -> Iterator[str]:
+def stream_response(
+    messages: list[chat_types.ChatCompletionMessageParam],
+) -> Iterator[str]:
     """Streams the response from the language model.
+
+    Args:
+        messages: List of chat messages to send to the language model.
 
     Yields:
         Response chunks from the language model as they are generated.
     """
+    if (
+        not messages
+        or messages[-1]["role"] != "user"
+        or not isinstance(messages[-1]["content"], str)
+        or not messages[-1]["content"].strip()
+    ):
+        raise ValueError("No messages provided for response generation.")
+
+    # Get RAG context if available
+    user_query = messages[-1]["content"]
+    rag_context_chunks = rag_processor.retrieve(user_query)
+
+    # If we have RAG context, append it to the most recent user message
+    if rag_context_chunks and messages:
+        context_text = "\n\n".join(rag_context_chunks)
+        messages[-1]["content"] = f"{messages[-1]['content']}\n\nRelevant context:\n{context_text}"
+
     stream = client.chat.completions.create(
-        model=settings.model_name,
-        messages=[
-            {"role": m["role"], "content": m["content"]}
-            for m in st.session_state.messages
-        ],
+        model=config.settings.llm_model_name,
+        messages=messages,  # type: ignore
         stream=True,
-        temperature=settings.temperature,
-        max_tokens=settings.max_tokens,
-        seed=settings.seed,
+        temperature=config.settings.temperature,
+        max_tokens=config.settings.max_tokens,
+        seed=config.settings.seed,
     )
     for chunk in stream:
-        yield chunk.choices[0].delta.content or ""
+        yield chunk.choices[0].delta.content or ""  # type: ignore
 
 
-def generate_response() -> None:
+def generate_response(messages: list[chat_types.ChatCompletionMessageParam]) -> None:
     """Generates a response from the language model and displays it."""
-    with st.chat_message("assistant"):
-        response = st.write_stream(stream_response)
+    response = st.write_stream(stream_response(messages))
     if isinstance(response, str):
         st.session_state.messages.append(Message(role="assistant", content=response))
     else:
