@@ -6,7 +6,7 @@ from qdrant_client.http import models
 class RAGSettings(pydantic.BaseModel):
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     chunk_size: int = 1024
-    chunk_overlap: int = 200
+    chunk_overlap: int = 100
     top_k: int = 5
 
 
@@ -39,6 +39,7 @@ class Settings(pydantic_settings.BaseSettings):
         env_file_encoding = "utf-8"
         extra = "allow"
         env_nested_delimiter = "__"
+        env_prefix = "CHATBOT_"
 
 
 settings = Settings()
