@@ -1,25 +1,51 @@
-from pydantic_settings import BaseSettings
+import pydantic
+import pydantic_settings
+from qdrant_client.http import models
 
 
-class Settings(BaseSettings):
+class RAGSettings(pydantic.BaseModel):
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
+    chunk_size: int = 1024
+    chunk_overlap: int = 100
+    top_k: int = 5
+    # Adaptive parsing settings
+    use_adaptive_parsing: bool = True
+    code_chunk_lines: int = 40
+    code_chunk_overlap_lines: int = 15
+    semantic_breakpoint_threshold: int = 95
+    device: str = "cpu"
+
+
+class QdrantSettings(pydantic.BaseModel):
+    url: str = "http://localhost:6333"
+    api_key: str | None = None
+    collection_name: str = "chatbot"
+    vector_size: int = 384  # BGE-Small-EN-v1.5 outputs 384-dimensional embeddings
+    distance_type: str = models.Distance.COSINE
+
+
+class Settings(pydantic_settings.BaseSettings):
     """Configuration settings for the chatbot application."""
 
     openai_api_base: str = "http://localhost:8000/v1"
     openai_api_key: str = "not-needed"
-    model_name: str = "Qwen/Qwen2.5-Coder-14B-Instruct-AWQ"
+    llm_model_name: str = "Qwen/Qwen2.5-Coder-7B-Instruct-AWQ"
     temperature: float = 0.7
     max_tokens: int = 2000
     repetition_penalty: float = 1.1
     seed: int = 1234
-    upload_dir: str = "uploads"
-    page_title: str = "My Custom Chatbot"
     host: str = "127.0.0.1"
     port: int = 8080
     debug: bool = True
+    qdrant: QdrantSettings = pydantic.Field(default_factory=QdrantSettings)
+    rag: RAGSettings = pydantic.Field(default_factory=RAGSettings)
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "allow"
+        env_nested_delimiter = "__"
+        env_prefix = "CHATBOT_"
 
 
 settings = Settings()

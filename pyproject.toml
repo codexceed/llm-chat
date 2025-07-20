@@ -15,8 +15,17 @@ license = { text = "MIT" }
 keywords = ["chatbot", "streamlit", "ai"]
 dependencies = [
     "streamlit~=1.46.1",
-    "pydantic-settings~=2.0.0",
-    "openai~=1.93.0",
+    "pydantic-settings~=2.0.3",
+    "openai~=1.93.3",
+    "llama-index~=0.12.49",
+    "llama-index-vector-stores-qdrant~=0.6.1",
+    "llama-index-embeddings-openai~=0.3.1",
+    "qdrant-client~=1.14.3",
+    "tree-sitter~=0.24.0",
+    "tree-sitter-c-sharp~=0.23.1",
+    "tree-sitter-embedded-template~=0.23.2",
+    "tree-sitter-language-pack~=0.9.0",
+    "tree-sitter-yaml~=0.7.1"
 ]
 
 [project.optional-dependencies]
@@ -32,6 +41,9 @@ dev = [
 [project.scripts]
 chatbot = "chatbot.cli:main"
 
+[tool.setuptools]
+packages = ["chatbot"]
+
 [tool.pytest.ini_options]
 minversion = "8.4.1"
 addopts = "-ra -q --cov"
@@ -43,7 +55,7 @@ testpaths = [
 lint.select = ["E", "F", "I", "N", "W", "B", "C4", "SIM", "UP"]
 lint.ignore = ["E501"]
 target-version = "py310"
-line-length = 88
+line-length = 120
 
 [tool.ruff.format]
 quote-style = "double"
