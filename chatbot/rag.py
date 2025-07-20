@@ -28,7 +28,7 @@ class RAG:
         """Initialize the RAG processor with Qdrant vector store."""
         self.client = qdrant_client.QdrantClient(url=settings.qdrant.url, api_key=settings.qdrant.api_key)
         self.embedding_model = huggingface.HuggingFaceEmbedding(
-            model_name=settings.rag.embedding_model,
+            model_name=settings.rag.embedding_model, device=settings.rag.device
         )
 
         # Configure LlamaIndex settings
@@ -50,8 +50,7 @@ class RAG:
         )  # Get more candidates for deduplication
 
         # Initialize parsers and pipelines for adaptive parsing
-        if settings.rag.use_adaptive_parsing:
-            self._init_adaptive_parsers()
+        self._init_parsers()
 
     def _ensure_collection_exists(self) -> None:
         """Ensure the Qdrant collection exists."""
@@ -70,33 +69,34 @@ class RAG:
                 ),
             )
 
-    def _init_adaptive_parsers(self) -> None:
+    def _init_parsers(self) -> None:
         """Initialize cached parsers and pipelines for adaptive parsing."""
-        self._markdown_parser = node_parser.MarkdownNodeParser()
-        self._html_parser = node_parser.HTMLNodeParser()
-
-        self._semantic_parser = node_parser.SemanticSplitterNodeParser(
-            embed_model=self.embedding_model,
-            buffer_size=1,
-            breakpoint_percentile_threshold=settings.rag.semantic_breakpoint_threshold,
-        )
-
         self._sentence_parser = node_parser.SentenceSplitter(
             chunk_size=settings.rag.chunk_size,
             chunk_overlap=settings.rag.chunk_overlap,
         )
-
-        # Initialize pipelines (excluding code pipeline - created dynamically)
-        self._markdown_pipeline = ingestion.IngestionPipeline(
-            transformations=[self._markdown_parser, self.embedding_model]
-        )
-        self._html_pipeline = ingestion.IngestionPipeline(transformations=[self._html_parser, self.embedding_model])
-        self._semantic_pipeline = ingestion.IngestionPipeline(
-            transformations=[self._semantic_parser, self.embedding_model]
-        )
         self._sentence_pipeline = ingestion.IngestionPipeline(
             transformations=[self._sentence_parser, self.embedding_model]
         )
+
+        if settings.rag.use_adaptive_parsing:
+            self._markdown_parser = node_parser.MarkdownNodeParser()
+            self._html_parser = node_parser.HTMLNodeParser()
+
+            self._semantic_parser = node_parser.SemanticSplitterNodeParser(
+                embed_model=self.embedding_model,
+                buffer_size=1,
+                breakpoint_percentile_threshold=settings.rag.semantic_breakpoint_threshold,
+            )
+
+            # Initialize pipelines (excluding code pipeline - created dynamically)
+            self._markdown_pipeline = ingestion.IngestionPipeline(
+                transformations=[self._markdown_parser, self.embedding_model]
+            )
+            self._html_pipeline = ingestion.IngestionPipeline(transformations=[self._html_parser, self.embedding_model])
+            self._semantic_pipeline = ingestion.IngestionPipeline(
+                transformations=[self._semantic_parser, self.embedding_model]
+            )
 
     def process_uploaded_files(self, uploaded_files: list[uploaded_file_manager.UploadedFile]) -> None:
         """Process and index uploaded files.

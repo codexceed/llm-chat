@@ -13,6 +13,7 @@ class RAGSettings(pydantic.BaseModel):
     code_chunk_lines: int = 40
     code_chunk_overlap_lines: int = 15
     semantic_breakpoint_threshold: int = 95
+    device: str = "cpu"
 
 
 class QdrantSettings(pydantic.BaseModel):
