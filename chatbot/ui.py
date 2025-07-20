@@ -1,8 +1,8 @@
 import streamlit as st
 from streamlit.elements.widgets import chat
 
+from chatbot import constants
 from chatbot.config import settings
-from chatbot.types import Message
 
 
 def render_sidebar() -> None:
@@ -24,7 +24,7 @@ def render_chat_interface() -> chat.ChatInputValue | None:
     """Renders the chat interface, including the chat history and input."""
 
     if "messages" not in st.session_state:
-        messages_init: list[Message] = []
+        messages_init: list[constants.Message] = []
         st.session_state.messages = messages_init
 
     for message in st.session_state.messages:

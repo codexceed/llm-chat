@@ -5,9 +5,8 @@ from openai.types import chat as chat_types
 import streamlit as st
 from streamlit.runtime import uploaded_file_manager
 
-from chatbot import config
+from chatbot import config, constants
 from chatbot.rag import RAG
-from chatbot.types import Message
 
 client = openai.OpenAI(
     api_key=config.settings.openai_api_key,
@@ -73,6 +72,6 @@ def generate_response(messages: list[chat_types.ChatCompletionMessageParam]) -> 
     """Generates a response from the language model and displays it."""
     response = st.write_stream(stream_response(messages))
     if isinstance(response, str):
-        st.session_state.messages.append(Message(role="assistant", content=response))
+        st.session_state.messages.append(constants.Message(role="assistant", content=response))
     else:
         raise TypeError("Expected response to be str, got %s", type(response).__name__)

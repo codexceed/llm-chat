@@ -1,7 +1,6 @@
 import streamlit as st
 
-from chatbot import chat, ui
-from chatbot.types import Message
+from chatbot import chat, constants, ui
 
 
 def main() -> None:
@@ -15,7 +14,7 @@ def main() -> None:
         if uploaded_files:
             chat.process_uploaded_files(uploaded_files)
 
-        st.session_state.messages.append(Message(role="user", content=prompt))
+        st.session_state.messages.append(constants.Message(role="user", content=prompt))
         with st.chat_message("user"):
             st.markdown(prompt)
         with st.chat_message("assistant"):
