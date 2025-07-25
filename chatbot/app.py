@@ -25,7 +25,7 @@ def initialize_session_state() -> None:
         )
 
 
-async def main() -> None:
+def main() -> None:
     """Main function for the Streamlit chatbot app."""
     st.logo("assets/rand_logo.jpg")
     st.set_page_config(layout="wide")
@@ -34,6 +34,7 @@ async def main() -> None:
     if chat_input := ui.render_chat_interface():
         prompt, uploaded_files = chat_input.text, chat_input.files
 
+        asyncio.run(chat.process_web_urls_in_prompt(prompt, st.session_state.http_client))
         if uploaded_files:
             chat.process_uploaded_files(uploaded_files)
 
@@ -50,4 +51,4 @@ async def main() -> None:
 
 if __name__ == "__main__":
     initialize_session_state()
-    asyncio.run(main())
+    main()
