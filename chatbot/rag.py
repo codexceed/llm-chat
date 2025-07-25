@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 import tempfile
 
+import httpx
 from llama_index import core
 from llama_index.core import ingestion, node_parser, schema
 from llama_index.embeddings import huggingface
@@ -17,6 +18,7 @@ from streamlit.runtime import uploaded_file_manager
 
 from chatbot import constants
 from chatbot.config import settings
+from chatbot.utils import web
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,6 +28,7 @@ class RAG:
 
     def __init__(self) -> None:
         """Initialize the RAG processor with Qdrant vector store."""
+        LOGGER.info("Initializing RAG processor with Qdrant vector store.")
         self.client = qdrant_client.QdrantClient(url=settings.qdrant.url, api_key=settings.qdrant.api_key)
         self.embedding_model = huggingface.HuggingFaceEmbedding(
             model_name=settings.rag.embedding_model, device=settings.rag.device
@@ -126,6 +129,36 @@ class RAG:
             nodes = self._sentence_pipeline.run(documents=documents)
 
         # Insert new nodes into the existing index.
+        self.index.insert_nodes(nodes)
+
+    async def process_web_urls(self, prompt: str, client: httpx.AsyncClient) -> None:
+        """Extract web URLs from prompt and index their content for RAG.
+
+        Args:
+            prompt: User input containing potential web URLs.
+            client: HTTP client for making requests to fetch URL content.
+        """
+        urls, web_docs_content = await web.lookup_http_urls_in_prompt(prompt, client)
+        if not web_docs_content:
+            return
+
+        # Create documents with URL metadata for better tracking
+        documents: list[core.Document] = []
+        for url, content in zip(urls, web_docs_content, strict=False):
+            if content:
+                doc = core.Document(text=content, metadata={"source": "web_url", "url": url, "content_type": "html"})
+                documents.append(doc)
+
+        if not documents:
+            return
+
+        # Process web documents using HTML pipeline for consistent parsing
+        if settings.rag.use_adaptive_parsing and hasattr(self, "_html_pipeline"):
+            nodes = self._html_pipeline.run(documents=documents)
+        else:
+            # Fallback to sentence-based parsing if adaptive parsing is disabled
+            nodes = self._sentence_pipeline.run(documents=documents)
+
         self.index.insert_nodes(nodes)
 
     def retrieve(self, query_text: str) -> list[str]:

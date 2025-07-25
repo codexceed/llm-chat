@@ -1,20 +1,25 @@
 from collections.abc import Iterator
+import logging
 
+import httpx
 import openai
 from openai.types import chat as chat_types
-import streamlit as st
 from streamlit.runtime import uploaded_file_manager
 
-from chatbot import config, constants
-from chatbot.rag import RAG
+from chatbot import config, resources
 
-client = openai.OpenAI(
-    api_key=config.settings.openai_api_key,
-    base_url=config.settings.openai_api_base,
-)
+LOGGER = logging.getLogger(__name__)
+RAG_PROCESSOR = resources.get_rag_processor()
 
-# Initialize RAG processor
-rag_processor = RAG()
+
+async def process_web_urls_in_prompt(prompt: str, client: httpx.AsyncClient) -> None:
+    """Extract web URLs from the user prompt and index their content for RAG.
+
+    Args:
+        prompt: User input containing potential web URLs.
+        client: HTTP client for making requests to fetch URL content.
+    """
+    await RAG_PROCESSOR.process_web_urls(prompt, client)
 
 
 def process_uploaded_files(
@@ -25,11 +30,11 @@ def process_uploaded_files(
     Args:
         uploaded_file: List of uploaded files from the chat input.
     """
-    rag_processor.process_uploaded_files(uploaded_files)
+    RAG_PROCESSOR.process_uploaded_files(uploaded_files)
 
 
 def stream_response(
-    messages: list[chat_types.ChatCompletionMessageParam],
+    messages: list[chat_types.ChatCompletionMessageParam], openai_client: openai.OpenAI
 ) -> Iterator[str]:
     """Streams the response from the language model.
 
@@ -49,14 +54,14 @@ def stream_response(
 
     # Get RAG context if available
     user_query = messages[-1]["content"]
-    rag_context_chunks = rag_processor.retrieve(user_query)
+    rag_context_chunks = RAG_PROCESSOR.retrieve(user_query)
 
     # If we have RAG context, append it to the most recent user message
     if rag_context_chunks and messages:
         context_text = "\n\n".join(rag_context_chunks)
         messages[-1]["content"] = f"{messages[-1]['content']}\n\nRelevant context:\n{context_text}"
 
-    stream = client.chat.completions.create(
+    stream = openai_client.chat.completions.create(
         model=config.settings.llm_model_name,
         messages=messages,  # type: ignore
         stream=True,
@@ -66,12 +71,3 @@ def stream_response(
     )
     for chunk in stream:
         yield chunk.choices[0].delta.content or ""  # type: ignore
-
-
-def generate_response(messages: list[chat_types.ChatCompletionMessageParam]) -> None:
-    """Generates a response from the language model and displays it."""
-    response = st.write_stream(stream_response(messages))
-    if isinstance(response, str):
-        st.session_state.messages.append(constants.Message(role="assistant", content=response))
-    else:
-        raise TypeError("Expected response to be str, got %s", type(response).__name__)

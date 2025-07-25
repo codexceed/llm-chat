@@ -1,7 +1,6 @@
 import streamlit as st
 from streamlit.elements.widgets import chat
 
-from chatbot import constants
 from chatbot.config import settings
 
 
@@ -22,11 +21,6 @@ def render_sidebar() -> None:
 
 def render_chat_interface() -> chat.ChatInputValue | None:
     """Renders the chat interface, including the chat history and input."""
-
-    if "messages" not in st.session_state:
-        messages_init: list[constants.Message] = []
-        st.session_state.messages = messages_init
-
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
