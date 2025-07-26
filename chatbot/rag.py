@@ -1,26 +1,25 @@
 """RAG (Retrieval-Augmented Generation) functionality using LlamaIndex and Qdrant."""
 
-from collections.abc import Sequence
-import logging
-from pathlib import Path
 import tempfile
+from collections.abc import Sequence
+from pathlib import Path
 
 import httpx
+import numpy as np
+import qdrant_client
 from llama_index import core
 from llama_index.core import ingestion, node_parser, schema
 from llama_index.embeddings import huggingface
 from llama_index.vector_stores import qdrant
-import numpy as np
-import qdrant_client
-from qdrant_client.http import exceptions as qdrant_exceptions
-from qdrant_client.http import models
+from qdrant_client.http import exceptions as qdrant_exceptions, models
+from streamlit import logger
 from streamlit.runtime import uploaded_file_manager
 
 from chatbot import constants
-from chatbot.config import settings
+from chatbot.settings import settings
 from chatbot.utils import web
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logger.get_logger(__name__)
 
 
 class RAG:
@@ -30,9 +29,7 @@ class RAG:
         """Initialize the RAG processor with Qdrant vector store."""
         LOGGER.info("Initializing RAG processor with Qdrant vector store.")
         self.client = qdrant_client.QdrantClient(url=settings.qdrant.url, api_key=settings.qdrant.api_key)
-        self.embedding_model = huggingface.HuggingFaceEmbedding(
-            model_name=settings.rag.embedding_model, device=settings.rag.device
-        )
+        self.embedding_model = huggingface.HuggingFaceEmbedding(model_name=settings.rag.embedding_model, device=settings.rag.device)
 
         # Configure LlamaIndex settings
         core.Settings.embed_model = self.embedding_model
@@ -48,9 +45,7 @@ class RAG:
         self.index = core.VectorStoreIndex.from_vector_store(  # type: ignore
             vector_store=self.vector_store
         )
-        self.retriever = self.index.as_retriever(
-            similarity_top_k=settings.rag.top_k * 2
-        )  # Get more candidates for deduplication
+        self.retriever = self.index.as_retriever(similarity_top_k=settings.rag.top_k * 2)  # Get more candidates for deduplication
 
         # Initialize parsers and pipelines for adaptive parsing
         self._init_parsers()
@@ -78,9 +73,7 @@ class RAG:
             chunk_size=settings.rag.chunk_size,
             chunk_overlap=settings.rag.chunk_overlap,
         )
-        self._sentence_pipeline = ingestion.IngestionPipeline(
-            transformations=[self._sentence_parser, self.embedding_model]
-        )
+        self._sentence_pipeline = ingestion.IngestionPipeline(transformations=[self._sentence_parser, self.embedding_model])
 
         if settings.rag.use_adaptive_parsing:
             self._markdown_parser = node_parser.MarkdownNodeParser()
@@ -93,13 +86,9 @@ class RAG:
             )
 
             # Initialize pipelines (excluding code pipeline - created dynamically)
-            self._markdown_pipeline = ingestion.IngestionPipeline(
-                transformations=[self._markdown_parser, self.embedding_model]
-            )
+            self._markdown_pipeline = ingestion.IngestionPipeline(transformations=[self._markdown_parser, self.embedding_model])
             self._html_pipeline = ingestion.IngestionPipeline(transformations=[self._html_parser, self.embedding_model])
-            self._semantic_pipeline = ingestion.IngestionPipeline(
-                transformations=[self._semantic_parser, self.embedding_model]
-            )
+            self._semantic_pipeline = ingestion.IngestionPipeline(transformations=[self._semantic_parser, self.embedding_model])
 
     def process_uploaded_files(self, uploaded_files: list[uploaded_file_manager.UploadedFile]) -> None:
         """Process and index uploaded files.
@@ -146,6 +135,8 @@ class RAG:
         documents: list[core.Document] = []
         for url, content in zip(urls, web_docs_content, strict=False):
             if content:
+                LOGGER.debug("Processing web URL: %s", url)
+                LOGGER.debug("Content: %s", content[:100])
                 doc = core.Document(text=content, metadata={"source": "web_url", "url": url, "content_type": "html"})
                 documents.append(doc)
 
@@ -162,7 +153,7 @@ class RAG:
         self.index.insert_nodes(nodes)
 
     def retrieve(self, query_text: str) -> list[str]:
-        """Retrieve relevant context chunks without LLM generation.
+        """Retrieve relevant context chunks.
 
         Args:
             query_text: The user's query.
@@ -176,7 +167,6 @@ class RAG:
             return self._deduplicate_chunks(chunks)[: settings.rag.top_k]
         except Exception as e:
             LOGGER.error(f"Error during retrieval: {e}")
-            # Return empty list if retrieval fails (e.g., no documents indexed)
             return []
 
     def _deduplicate_chunks(self, chunks: list[str]) -> list[str]:
@@ -328,9 +318,7 @@ class RAG:
             try:
                 if language == "unknown":
                     # Fallback to semantic splitter for unknown code languages
-                    LOGGER.warning(
-                        f"Unknown code language, falling back to semantic splitter for {len(docs)} documents"
-                    )
+                    LOGGER.warning(f"Unknown code language, falling back to semantic splitter for {len(docs)} documents")
                     nodes = self._semantic_pipeline.run(documents=docs)
                 else:
                     # Create language-specific code parser
@@ -345,7 +333,7 @@ class RAG:
 
                 all_nodes.extend(nodes)
 
-            except Exception as e:
+            except Exception as e:  # noqa: PERF203
                 LOGGER.error(f"CodeSplitter failed for language '{language}': {e}. Falling back to semantic splitter.")
                 # Fallback to semantic splitter on any error
                 fallback_nodes = self._semantic_pipeline.run(documents=docs)

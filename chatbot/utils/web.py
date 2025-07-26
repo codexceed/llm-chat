@@ -1,11 +1,11 @@
 import asyncio
-from collections.abc import Sequence
-import logging
 import re
+from collections.abc import Sequence
 
 import httpx
+from streamlit import logger
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logger.get_logger(__name__)
 URL_REGEX = re.compile(r'https?://[^\s<>"{}|\\^`\[\]]+')
 
 
@@ -73,6 +73,9 @@ async def lookup_http_urls_in_prompt(prompt: str, client: httpx.AsyncClient) -> 
     urls = extract_urls_from_text(prompt)
     if not urls:
         return [], []
+
+    LOGGER.debug("Looking up URLs in prompt:\n-%s", "-".join(urls))
+
     docs = await fetch_content_from_urls(urls, client)
 
     return urls, docs

@@ -4,6 +4,8 @@ from qdrant_client.http import models
 
 
 class RAGSettings(pydantic.BaseModel):
+    """Settings for the RAG (Retrieval-Augmented Generation) processor."""
+
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     chunk_size: int = 1024
     chunk_overlap: int = 100
@@ -17,6 +19,8 @@ class RAGSettings(pydantic.BaseModel):
 
 
 class QdrantSettings(pydantic.BaseModel):
+    """Settings for the Qdrant vector database."""
+
     url: str = "http://localhost:6333"
     api_key: str | None = None
     collection_name: str = "chatbot"
@@ -39,8 +43,11 @@ class Settings(pydantic_settings.BaseSettings):
     debug: bool = True
     qdrant: QdrantSettings = pydantic.Field(default_factory=QdrantSettings)
     rag: RAGSettings = pydantic.Field(default_factory=RAGSettings)
+    context_view_size: int = 1000
 
     class Config:
+        """Configuration for the settings model."""
+
         env_file = ".env"
         env_file_encoding = "utf-8"
         extra = "allow"

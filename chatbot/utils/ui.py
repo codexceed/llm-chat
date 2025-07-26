@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit.elements.widgets import chat
 
-from chatbot.config import settings
+from chatbot.settings import settings
 
 
 def render_sidebar() -> None:
