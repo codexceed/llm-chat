@@ -26,8 +26,8 @@ class RAG:
     """Handles document processing and retrieval for RAG functionality."""
 
     def __init__(self) -> None:
-        """Initialize the RAG processor with Qdrant vector store."""
-        LOGGER.info("Initializing RAG processor with Qdrant vector store.")
+        """Initialize the RAG processor with Qdrant vector store and hybrid search."""
+        LOGGER.info("Initializing RAG processor with Qdrant hybrid vector store.")
         self.client = qdrant_client.QdrantClient(url=settings.qdrant.url, api_key=settings.qdrant.api_key)
         self.embedding_model = huggingface.HuggingFaceEmbedding(model_name=settings.rag.embedding_model, device=settings.rag.device)
 
@@ -38,14 +38,28 @@ class RAG:
 
         self._ensure_collection_exists()
 
-        self.vector_store = qdrant.QdrantVectorStore(
-            client=self.client,
-            collection_name=settings.qdrant.collection_name,
-        )
+        # Initialize vector store with hybrid search capability
+        vector_store_kwargs = {
+            "client": self.client,
+            "collection_name": settings.qdrant.collection_name,
+        }
+
+        # Add sparse model for hybrid search if enabled
+        if settings.rag.use_hybrid_retrieval:
+            LOGGER.info(f"Enabling hybrid search with sparse model: {settings.rag.sparse_model}")
+            vector_store_kwargs["fastembed_sparse_model"] = settings.rag.sparse_model
+
+        self.vector_store = qdrant.QdrantVectorStore(**vector_store_kwargs)
         self.index = core.VectorStoreIndex.from_vector_store(  # type: ignore
             vector_store=self.vector_store
         )
-        self.retriever = self.index.as_retriever(similarity_top_k=settings.rag.top_k * 2)  # Get more candidates for deduplication
+
+        # Configure retriever with hybrid search parameters
+        retriever_kwargs = {"similarity_top_k": settings.rag.hybrid_top_k}
+        if settings.rag.use_hybrid_retrieval:
+            retriever_kwargs["sparse_top_k"] = settings.rag.hybrid_top_k
+
+        self.retriever = self.index.as_retriever(**retriever_kwargs)
 
         # Initialize parsers and pipelines for adaptive parsing
         self._init_parsers()
@@ -153,7 +167,7 @@ class RAG:
         self.index.insert_nodes(nodes)
 
     def retrieve(self, query_text: str) -> list[str]:
-        """Retrieve relevant context chunks.
+        """Retrieve relevant context chunks using Qdrant's hybrid retrieval.
 
         Args:
             query_text: The user's query.
@@ -162,9 +176,13 @@ class RAG:
             List of relevant text chunks with duplicates removed.
         """
         try:
+            # Use Qdrant's built-in hybrid retrieval (dense + sparse)
             nodes = self.retriever.retrieve(query_text)
             chunks = [node.text for node in nodes]
+
+            # Apply deduplication and return top_k results
             return self._deduplicate_chunks(chunks)[: settings.rag.top_k]
+
         except Exception as e:
             LOGGER.error(f"Error during retrieval: {e}")
             return []

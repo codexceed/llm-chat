@@ -1,0 +1,101 @@
+extend-include = ["*.ipynb"]
+line-length = 140
+include = [
+    "chatbot/**/*.py",
+    "tests/**/*.py",
+    "pyproject.toml",
+]
+exclude = [
+    "docs/*"
+]
+
+[lint]
+ignore = [
+    'D100',  # Missing docstring in public module
+    'D102',  # Missing docstring in public method
+    'D104',  # Missing docstring in public package
+    'D105',  # Missing docstring in magic method
+    'D107',  # Missing docstring in __init__
+    'D202',  # No blank lines allowed after function docstring
+    'D205',  # 1 blank line required between summary line and description
+    'E501',  # Line too long
+    'FA102',  # Missing `from __future__ import annotations`, but uses PEP 585 collection
+    'N812',  # Lowercase `functional` imported as non-lowercase `F`
+    'PYI051',  # `Literal[...]` is redundant in a union with `...`
+    'RET504',  # Unnecessary assignment before `return` statement
+    'SIM300',  # yoda-conditions: Checks for conditions that position a constant on the left-hand side of the comparison operator, rather than the right-hand side.
+]
+# TODO: These are all of the linters that I would like to enable, but we have ~1k warnings to fix before we can do that.
+# select = ['PL', 'PTH', 'TD', 'FIX', 'C90']
+select = [
+    'A',  # flake8-builtins,
+    'ANN002',  # flake8-annotations *args should have a type
+    'ANN003',  # flake8-annotations **kwargs should have a type
+    'ASYNC',  # flake8-async
+    'B',  # Bugbear finding likely bugs and design problems in your program
+    'C4',  # flake8-comprehensions
+    'D',  # pydocstyle
+    'D400',  # pydocstyle First line should end with a period. Not part of deafult D checks for google style.
+    # 'D401', # First line should be in imperative mood.  Not part of deafult D checks for google style.
+    'D404',  # First word of the docstring should not be This.  Not part of deafult D checks for google style.
+    'D406',  # Section name should end with a newline.  Not part of deafult D checks for google style.
+    'E',  # pycodestyle Error
+    'ERA',  # eradicate
+    'F',  # Pyflakes
+    'F401',  # Unused Imports
+    'FA',  # Future Annotations
+    'I',  # Isort
+    'N',  # pep8-naming
+    'NPY',  # NumPy Rules
+    'PERF',  # performance
+    'PYI',  # flake8-pyi
+    'RET',  # flake8-return
+    'RUF',  # Ruff
+    'SIM',  # flake8-simplify
+    'T20',  # flake8-print
+    'TID',  # Pyflake Tidy Import (for banning relative imports)
+    'UP',  # Pyupgrade macros
+    'W',  # pycodestyle warning
+]
+
+[lint.flake8-builtins]
+builtins-ignorelist = ["input"]
+
+[lint.flake8-tidy-imports]
+ban-relative-imports = 'all'
+
+[lint.isort]
+combine-as-imports = true
+known-first-party = [
+    "app",
+    "tests",
+]
+split-on-trailing-comma = false
+
+[lint.pep8-naming]
+ignore-names = [
+    "B",
+    "D_x_z",
+    "D_xz",
+    "N",
+    "mTm",
+    "mTn",
+    "nTn",
+    "setUp",
+    "setUpClass",
+    "tearDown",
+    "tearDownClass",
+]
+
+[lint.per-file-ignores]
+"__init__.py" = [
+    "F401",  # Import imported into __init__ by unused; consider adding to `__all__` or using a redundant alias
+    "F403",  # `from foo import *` used; unable to detect undefined names
+]
+"tests/*.py" = [
+    "D101",  # Missing docstring in public class
+    "D106",  # Missing docstring in public nested class
+]
+
+[lint.pydocstyle]
+convention = "google"

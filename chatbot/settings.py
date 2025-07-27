@@ -10,12 +10,18 @@ class RAGSettings(pydantic.BaseModel):
     chunk_size: int = 1024
     chunk_overlap: int = 100
     top_k: int = 5
+
     # Adaptive parsing settings
     use_adaptive_parsing: bool = True
     code_chunk_lines: int = 40
     code_chunk_overlap_lines: int = 15
     semantic_breakpoint_threshold: int = 95
     device: str = "cpu"
+
+    # Hybrid retrieval settings
+    use_hybrid_retrieval: bool = True
+    sparse_model: str = "Qdrant/bm42-all-minilm-l6-v2-attentions"  # BM42 sparse embedding model
+    hybrid_top_k: int = 100
 
 
 class QdrantSettings(pydantic.BaseModel):
