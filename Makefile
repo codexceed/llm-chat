@@ -1,5 +1,6 @@
 # Makefile for Python project automation
 # Include separate make files for organization
+include .makefiles/uv.mk
 include .makefiles/lint.mk
 include .makefiles/test.mk
 
@@ -10,7 +11,8 @@ help:
 	@echo "📋 Available targets:"
 	@echo ""
 	@echo "🔧 Setup:"
-	@echo "  install-dev      - Install development dependencies"
+	@echo "  install-uv       - Install uv package manager"
+	@echo "  install-dev      - Install development dependencies (with uv)"
 	@echo "  dev             - Setup complete development environment"
 	@echo ""
 	@echo "🎨 Linting & Code Quality:"
@@ -33,9 +35,9 @@ help:
 	@echo ""
 
 # Install development dependencies
-install-dev:
-	@echo "📦 Installing development dependencies..."
-	pip install -e ".[dev]"
+install-dev: check-uv
+	@echo "📦 Installing development dependencies with uv..."
+	uv pip install -e ".[dev]"
 	@echo "✅ Development dependencies installed"
 
 # Clean cache and build artifacts

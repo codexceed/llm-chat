@@ -9,8 +9,9 @@ This is a learning project meant to help the developer understand the state-of-t
 ### Setup and Installation
 ```bash
 pip install -e .              # Install package in development mode
-make install-dev              # Install with development dependencies
+make install-dev              # Install with development dependencies (uses uv)
 make dev                      # Complete development environment setup
+make install-uv               # Install uv package manager (if needed)
 ```
 
 ### Code Quality and Linting
@@ -37,6 +38,15 @@ python -m pytest tests/ -v   # Direct pytest command
 chatbot                       # Start the Streamlit chatbot application
 ```
 
+### Profiling
+```bash
+make profile-install          # Install profiling dependencies (with uv)
+make profile-interactive      # Run interactive profiling with Streamlit
+make profile-batch            # Run batch profiling tests
+make profile-compare          # Compare profiling sessions
+make profile-clean            # Clean profiling output
+```
+
 ### Docker Services
 ```bash
 # Start local LLM servers
@@ -54,12 +64,14 @@ This is a modern chatbot application built with Streamlit that integrates Large 
 ### Core Components
 
 - **`chatbot/app.py`** - Main Streamlit application entry point
-- **`chatbot/chat.py`** - Core chat logic and LLM interaction with streaming responses
+- **`chatbot/utils/chat.py`** - Core chat logic and LLM interaction with streaming responses
 - **`chatbot/rag.py`** - RAG system with Qdrant vector store and adaptive document parsing
-- **`chatbot/ui.py`** - Streamlit UI components and interface rendering
-- **`chatbot/config.py`** - Centralized configuration management using Pydantic settings
+- **`chatbot/utils/ui.py`** - Streamlit UI components and interface rendering
+- **`chatbot/settings.py`** - Centralized configuration management using Pydantic settings
 - **`chatbot/constants.py`** - Type definitions and file type mappings for RAG processing
 - **`chatbot/cli.py`** - Command-line interface entry point
+- **`chatbot/utils/web.py`** - Web content processing and URL handling
+- **`chatbot/resources.py`** - Resource management and initialization
 
 ### Key Architecture Patterns
 

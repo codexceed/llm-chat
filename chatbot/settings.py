@@ -6,10 +6,12 @@ from qdrant_client.http import models
 class RAGSettings(pydantic.BaseModel):
     """Settings for the RAG (Retrieval-Augmented Generation) processor."""
 
+    enabled: bool = True
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     chunk_size: int = 1024
     chunk_overlap: int = 100
     top_k: int = 5
+    deduplication_similarity_threshold: float = 0.9
 
     # Adaptive parsing settings
     use_adaptive_parsing: bool = True
@@ -20,8 +22,12 @@ class RAGSettings(pydantic.BaseModel):
 
     # Hybrid retrieval settings
     use_hybrid_retrieval: bool = True
-    sparse_model: str = "Qdrant/bm42-all-minilm-l6-v2-attentions"  # BM42 sparse embedding model
+    sparse_model: str = "Qdrant/bm25"  # BM42 sparse embedding model
     hybrid_top_k: int = 100
+
+    # Relevance filtering settings
+    enable_relevance_filtering: bool = True
+    relevance_threshold: float = 0.75  # Minimum semantic similarity to query (0.0-1.0)
 
 
 class QdrantSettings(pydantic.BaseModel):
@@ -61,4 +67,4 @@ class Settings(pydantic_settings.BaseSettings):
         env_prefix = "CHATBOT_"
 
 
-settings = Settings()
+CHATBOT_SETTINGS = Settings()

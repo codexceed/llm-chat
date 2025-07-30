@@ -67,8 +67,7 @@ ban-relative-imports = 'all'
 [lint.isort]
 combine-as-imports = true
 known-first-party = [
-    "app",
-    "tests",
+    "chatbot",
 ]
 split-on-trailing-comma = false
 

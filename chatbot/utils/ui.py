@@ -1,18 +1,18 @@
 import streamlit as st
 from streamlit.elements.widgets import chat
 
-from chatbot.settings import settings
+from chatbot.settings import CHATBOT_SETTINGS
 
 
 def render_sidebar() -> None:
     """Renders the sidebar for the chatbot application, including model settings and chat controls."""
     with st.sidebar:
         st.title("Model Settings")
-        st.code(settings.llm_model_name, language="bash")
-        settings.temperature = st.slider("Temperature", 0.0, 1.0, settings.temperature)
-        settings.max_tokens = st.slider("Max Tokens", 1, 4096, settings.max_tokens)
-        settings.repetition_penalty = st.slider("Repetition Penalty", 1.0, 2.0, settings.repetition_penalty)
-        settings.seed = st.number_input("Seed", 0, 1000000, settings.seed)
+        st.code(CHATBOT_SETTINGS.llm_model_name, language="bash")
+        CHATBOT_SETTINGS.temperature = st.slider("Temperature", 0.0, 1.0, CHATBOT_SETTINGS.temperature)
+        CHATBOT_SETTINGS.max_tokens = st.slider("Max Tokens", 1, 4096, CHATBOT_SETTINGS.max_tokens)
+        CHATBOT_SETTINGS.repetition_penalty = st.slider("Repetition Penalty", 1.0, 2.0, CHATBOT_SETTINGS.repetition_penalty)
+        CHATBOT_SETTINGS.seed = st.number_input("Seed", 0, 1000000, CHATBOT_SETTINGS.seed)
 
         st.title("Chat Controls")
         if st.sidebar.button("Clear Chat"):

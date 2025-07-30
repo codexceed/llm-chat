@@ -6,7 +6,7 @@ import httpx
 from streamlit import logger
 
 LOGGER = logger.get_logger(__name__)
-URL_REGEX = re.compile(r'https?://[^\s<>"{}|\\^`\[\]]+')
+URL_REGEX = re.compile(r"https?:\/\/(?:[-\w.])+(?:\:[0-9]+)?(?:\/(?:[\w\/_.])*(?:\?(?:[\w&=%.])*)?(?:\#(?:[\w.])*)?)?", re.IGNORECASE)
 
 
 def extract_urls_from_text(text: str) -> list[str]:
@@ -18,7 +18,7 @@ def extract_urls_from_text(text: str) -> list[str]:
     Returns:
         List of unique URLs found in the text
     """
-    urls = URL_REGEX.findall(text, re.IGNORECASE)
+    urls = URL_REGEX.findall(text)
     unique_urls = list(set(urls))
     LOGGER.info("Extracted URLs from prompt:\n-%s", "\n-".join(unique_urls))
     return unique_urls
@@ -35,7 +35,7 @@ async def _fetch_url(url: str, client: httpx.AsyncClient) -> str:
         Response text from the URL
     """
     try:
-        response = await client.get(url)
+        response = await client.get(url, follow_redirects=True)
         response.raise_for_status()
         return response.text
     except httpx.HTTPStatusError as e:
@@ -74,7 +74,7 @@ async def lookup_http_urls_in_prompt(prompt: str, client: httpx.AsyncClient) -> 
     if not urls:
         return [], []
 
-    LOGGER.debug("Looking up URLs in prompt:\n-%s", "-".join(urls))
+    LOGGER.debug("Looking up URLs in prompt:\n-%s", "- ".join(urls))
 
     docs = await fetch_content_from_urls(urls, client)
 

@@ -29,12 +29,12 @@ def stream_response(messages: list[chat_types.ChatCompletionMessageParam], opena
         raise ValueError("No messages provided for response generation.")
 
     stream = openai_client.chat.completions.create(
-        model=settings.settings.llm_model_name,
+        model=settings.CHATBOT_SETTINGS.llm_model_name,
         messages=messages,  # type: ignore
         stream=True,
-        temperature=settings.settings.temperature,
-        max_tokens=settings.settings.max_tokens,
-        seed=settings.settings.seed,
+        temperature=settings.CHATBOT_SETTINGS.temperature,
+        max_tokens=settings.CHATBOT_SETTINGS.max_tokens,
+        seed=settings.CHATBOT_SETTINGS.seed,
     )
     for chunk in stream:
         yield chunk.choices[0].delta.content or ""  # type: ignore

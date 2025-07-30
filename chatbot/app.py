@@ -31,8 +31,8 @@ def initialize_session_state() -> None:
         st.session_state.http_client = httpx.AsyncClient()
     if "openai_client" not in st.session_state:
         st.session_state.openai_client = openai.OpenAI(
-            api_key=settings.settings.openai_api_key,
-            base_url=settings.settings.openai_api_base,
+            api_key=settings.CHATBOT_SETTINGS.openai_api_key,
+            base_url=settings.CHATBOT_SETTINGS.openai_api_base,
         )
 
 
@@ -54,22 +54,24 @@ def main() -> None:
             st.markdown(prompt)
 
             # If RAG is enabled, retrieve additional context
-            context_text = ""
-            with st.spinner("Retrieving additional context..."):
-                asyncio.run(RAG_PROCESSOR.process_web_urls(prompt, st.session_state.http_client))
-                if uploaded_files:
-                    LOGGER.debug("Processing uploaded files:\n-%s", "-".join([file.name for file in uploaded_files]))
-                    RAG_PROCESSOR.process_uploaded_files(uploaded_files)
-                rag_context_chunks = RAG_PROCESSOR.retrieve(prompt)
-                if rag_context_chunks:
-                    context_text = "\n\n".join(rag_context_chunks)
+            if settings.CHATBOT_SETTINGS.rag.enabled:
+                LOGGER.info("Initiating RAG processing.")
+                context_text = ""
+                with st.spinner("Retrieving additional context..."):
+                    asyncio.run(RAG_PROCESSOR.process_web_urls(prompt, st.session_state.http_client))
+                    if uploaded_files:
+                        LOGGER.debug("Processing uploaded files:\n-%s", "- ".join([file.name for file in uploaded_files]))
+                        RAG_PROCESSOR.process_uploaded_files(uploaded_files)
+                    rag_context_chunks = RAG_PROCESSOR.retrieve(prompt)
+                    if rag_context_chunks:
+                        context_text = "\n\n".join(rag_context_chunks)
 
-            if context_text:
-                with st.expander("Relevant Context", expanded=False):
-                    st.text(context_text[: settings.settings.context_view_size] + "...")
+                if context_text:
+                    with st.expander("Relevant Context", expanded=False):
+                        st.text(context_text[: settings.CHATBOT_SETTINGS.context_view_size] + "...")
 
-            contextualized_prompt = PROMPT_TEMPLATE.format(context=context_text, prompt=prompt)
-            contextualized_messages[-1]["content"] = contextualized_prompt
+                contextualized_prompt = PROMPT_TEMPLATE.format(context=context_text, prompt=prompt)
+                contextualized_messages[-1]["content"] = contextualized_prompt
 
         # Stream the response from the LLM
         with st.chat_message("assistant"):
