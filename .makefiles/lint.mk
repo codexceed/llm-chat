@@ -4,32 +4,33 @@
 # Format code with ruff
 format:
 	@echo "🎨 Formatting code with ruff..."
-	ruff format .
+	ruff format
 	@echo "✅ Code formatting complete"
 
 # Run ruff linter
 lint:
 	@echo "🔍 Running ruff linter..."
-	ruff check .
+	ruff check
 	@echo "✅ Linting complete"
 
 # Fix linting issues automatically
 lint-fix:
 	@echo "🔧 Fixing linting issues with ruff..."
-	ruff check --fix .
-	ruff format .
+	ruff check --fix
+	ruff format
 	@echo "✅ Auto-fix complete"
 
 # Run mypy type checker
 type-check:
 	@echo "🔍 Running mypy type checker..."
-	mypy .
+	mypy
 	@echo "✅ Type checking complete"
 
 # Run bandit security scanner
 security:
 	@echo "🔒 Running bandit security scanner..."
-	bandit -r . -f json -o bandit-report.json || (cat bandit-report.json && exit 1)
+	@bandit -c pyproject.toml -r . -f json -o bandit-report.json || (cat bandit-report.json && rm -f bandit-report.json && exit 1)
+	@rm -f bandit-report.json
 	@echo "✅ Security scan complete"
 
 # Pre-commit setup
@@ -56,7 +57,6 @@ lint-all: format lint type-check security
 	@echo "  ✅ Linting passed (ruff check)"
 	@echo "  ✅ Type checking passed (mypy)"
 	@echo "  ✅ Security scan passed (bandit)"
-	@echo "  ✅ Dependencies checked (safety)"
 	@echo ""
 
 # Quick check (no formatting, just validation)

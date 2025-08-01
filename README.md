@@ -90,11 +90,14 @@ docker-compose up qdrant
 ### Setup Development Environment
 
 ```bash
-# Install with development dependencies
+# Install with development dependencies (uses uv for speed)
 make install-dev
 
 # Set up pre-commit hooks and complete dev environment
 make dev
+
+# Install uv package manager (if needed)
+make install-uv
 ```
 
 ### Code Quality
@@ -130,10 +133,12 @@ make test-unit
 
 The application follows a modular design with clear separation of concerns:
 
-- **UI Layer** (`ui.py`) - Streamlit interface components
-- **Chat Logic** (`chat.py`) - LLM interaction and conversation management  
-- **RAG System** (`rag.py`) - Document processing and vector search
-- **Configuration** (`config.py`) - Centralized settings management
+- **UI Layer** (`chatbot/utils/ui.py`) - Streamlit interface components
+- **Chat Logic** (`chatbot/utils/chat.py`) - LLM interaction and conversation management  
+- **RAG System** (`chatbot/rag.py`) - Document processing and vector search
+- **Configuration** (`chatbot/settings.py`) - Centralized settings management
+- **Web Processing** (`chatbot/utils/web.py`) - URL handling and content fetching
+- **Resources** (`chatbot/resources.py`) - Resource management and initialization
 
 ## Supported Models
 
