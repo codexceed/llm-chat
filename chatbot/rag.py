@@ -54,9 +54,7 @@ class RAG:
                 client=self.client,
                 collection_name=CHATBOT_SETTINGS.qdrant.collection_name,
             )
-        self.index = core.VectorStoreIndex.from_vector_store(  # type: ignore
-            vector_store=self.vector_store, embed_model=self.embedding_model
-        )
+        self.index = core.VectorStoreIndex.from_vector_store(vector_store=self.vector_store, embed_model=self.embedding_model)  # type: ignore
 
         # Configure retriever with hybrid search parameters
         retriever_kwargs: dict[str, Any] = {"similarity_top_k": CHATBOT_SETTINGS.rag.hybrid_top_k}

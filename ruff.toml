@@ -6,7 +6,8 @@ include = [
     "pyproject.toml",
 ]
 exclude = [
-    "docs/*"
+    "docs/*",
+    "scripts/*"
 ]
 
 [lint]
@@ -16,8 +17,6 @@ ignore = [
     'D104',  # Missing docstring in public package
     'D105',  # Missing docstring in magic method
     'D107',  # Missing docstring in __init__
-    'D202',  # No blank lines allowed after function docstring
-    'D205',  # 1 blank line required between summary line and description
     'E501',  # Line too long
     'FA102',  # Missing `from __future__ import annotations`, but uses PEP 585 collection
     'N812',  # Lowercase `functional` imported as non-lowercase `F`
@@ -43,6 +42,8 @@ select = [
     'ERA',  # eradicate
     'F',  # Pyflakes
     'F401',  # Unused Imports
+    'F403',  # `from module import *` used; unable to detect undefined names
+    'F405',  # Name may be undefined, or defined from star imports
     'FA',  # Future Annotations
     'I',  # Isort
     'N',  # pep8-naming
@@ -98,3 +99,9 @@ ignore-names = [
 
 [lint.pydocstyle]
 convention = "google"
+
+# Enforce module/package level imports only (no individual class/function imports)
+[lint.flake8-import-conventions]
+banned-from = [
+    "from typing import Dict, List, Set, Tuple",  # Use dict, list, set, tuple instead
+]

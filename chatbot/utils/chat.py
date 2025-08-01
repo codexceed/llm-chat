@@ -30,11 +30,11 @@ def stream_response(messages: list[chat_types.ChatCompletionMessageParam], opena
 
     stream = openai_client.chat.completions.create(
         model=settings.CHATBOT_SETTINGS.llm_model_name,
-        messages=messages,  # type: ignore
+        messages=messages,
         stream=True,
         temperature=settings.CHATBOT_SETTINGS.temperature,
         max_tokens=settings.CHATBOT_SETTINGS.max_tokens,
         seed=settings.CHATBOT_SETTINGS.seed,
     )
     for chunk in stream:
-        yield chunk.choices[0].delta.content or ""  # type: ignore
+        yield chunk.choices[0].delta.content or ""
