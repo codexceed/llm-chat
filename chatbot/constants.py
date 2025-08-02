@@ -2,8 +2,8 @@ import enum
 from typing import Literal, TypedDict
 
 
-class Message(TypedDict):
-    """A dictionary representing a chat message."""
+class ChatMessage(TypedDict):
+    """A dictionary representing a chat UI message."""
 
     role: Literal["user", "assistant"]
     content: str

@@ -27,7 +27,7 @@ class RAGSettings(pydantic.BaseModel):
 
     # Relevance filtering settings
     enable_relevance_filtering: bool = True
-    relevance_threshold: float = 0.75  # Minimum semantic similarity to query (0.0-1.0)
+    relevance_threshold: float = 0.6  # Minimum semantic similarity to query (0.0-1.0)
 
 
 class QdrantSettings(pydantic.BaseModel):

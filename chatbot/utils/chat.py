@@ -20,14 +20,6 @@ def stream_response(messages: list[chat_types.ChatCompletionMessageParam], opena
     Yields:
         Response chunks from the language model as they are generated.
     """
-    if (
-        not messages
-        or messages[-1]["role"] != "user"
-        or not isinstance(messages[-1]["content"], str)
-        or not messages[-1]["content"].strip()
-    ):
-        raise ValueError("No messages provided for response generation.")
-
     stream = openai_client.chat.completions.create(
         model=settings.CHATBOT_SETTINGS.llm_model_name,
         messages=messages,

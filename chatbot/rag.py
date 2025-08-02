@@ -242,6 +242,7 @@ class RAG:
                 deduplicated_chunks.append(chunk)
                 deduplicated_indices.append(i)
 
+        LOGGER.info("Deduplicated %d chunks down to %d", len(deduplicated_chunks), len(deduplicated_indices))
         return deduplicated_chunks
 
     def _vectorized_cosine_similarity(self, embeddings1: np.ndarray, embeddings2: np.ndarray) -> np.ndarray:

@@ -1,9 +1,9 @@
 import asyncio
-import copy
 
 import httpx
 import openai
 import streamlit as st
+from openai.types import chat as chat_types
 from streamlit import logger
 
 from chatbot import constants, resources, settings
@@ -27,6 +27,8 @@ def initialize_session_state() -> None:
     LOGGER.info("Initializing session state.")
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    if "openai_messages" not in st.session_state:
+        st.session_state.openai_messages = []
     if "http_client" not in st.session_state:
         st.session_state.http_client = httpx.AsyncClient()
     if "openai_client" not in st.session_state:
@@ -36,7 +38,7 @@ def initialize_session_state() -> None:
         )
 
 
-def main() -> None:
+async def main() -> None:
     """Main function for the Streamlit chatbot app."""
     st.logo("assets/rand_logo.jpg")
     st.set_page_config(layout="wide")
@@ -47,18 +49,17 @@ def main() -> None:
 
         LOGGER.debug("Received prompt: %s", prompt)
 
-        st.session_state.messages.append(constants.Message(role="user", content=prompt))
-        contextualized_messages = copy.deepcopy(st.session_state.messages)
+        st.session_state.messages.append(constants.ChatMessage(role="user", content=prompt))
+        st.session_state.openai_messages.append(chat_types.ChatCompletionUserMessageParam(role="user", content=prompt))
 
         with st.chat_message("user"):
             st.markdown(prompt)
 
-            # If RAG is enabled, retrieve additional context
             if settings.CHATBOT_SETTINGS.rag.enabled:
                 LOGGER.info("Initiating RAG processing.")
                 context_text = ""
                 with st.spinner("Retrieving additional context..."):
-                    asyncio.run(RAG_PROCESSOR.process_web_urls(prompt, st.session_state.http_client))
+                    await RAG_PROCESSOR.process_web_urls(prompt, st.session_state.http_client)
                     if uploaded_files:
                         LOGGER.debug("Processing uploaded files:\n-%s", "- ".join([file.name for file in uploaded_files]))
                         RAG_PROCESSOR.process_uploaded_files(uploaded_files)
@@ -70,18 +71,18 @@ def main() -> None:
                     with st.expander("Relevant Context", expanded=False):
                         st.text(context_text[: settings.CHATBOT_SETTINGS.context_view_size] + "...")
 
-                contextualized_prompt = PROMPT_TEMPLATE.format(context=context_text, prompt=prompt)
-                contextualized_messages[-1]["content"] = contextualized_prompt
+                st.session_state.openai_messages[-1]["content"] = PROMPT_TEMPLATE.format(context=context_text, prompt=prompt)
 
         # Stream the response from the LLM
         with st.chat_message("assistant"):
-            response = st.write_stream(chat.stream_response(contextualized_messages, st.session_state.openai_client))
+            response = st.write_stream(chat.stream_response(st.session_state.openai_messages, st.session_state.openai_client))
             if isinstance(response, str):
-                st.session_state.messages.append(constants.Message(role="assistant", content=response))
+                st.session_state.messages.append(chat_types.ChatCompletionAssistantMessageParam(role="assistant", content=response))
+                st.session_state.openai_messages.append(chat_types.ChatCompletionAssistantMessageParam(role="assistant", content=response))
             else:
                 raise TypeError("Expected response to be str, got %s", type(response).__name__)
 
 
 if __name__ == "__main__":
     initialize_session_state()
-    main()
+    asyncio.run(main())

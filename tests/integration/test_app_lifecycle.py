@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
-from chatbot.constants import Message
+from chatbot.constants import ChatMessage
 from chatbot.rag import RAG
 from chatbot.settings import Settings
 from chatbot.utils.chat import stream_response
@@ -253,7 +253,7 @@ def test_stream_response_integration() -> None:
     mock_stream.__iter__.return_value = iter(mock_chunks)
     mock_client.chat.completions.create.return_value = mock_stream
 
-    messages: list[Message] = [{"role": "user", "content": "Hello"}]
+    messages: list[ChatMessage] = [{"role": "user", "content": "Hello"}]
 
     # Test streaming
     response_chunks = list(stream_response(cast(Any, messages), mock_client))
@@ -320,7 +320,9 @@ async def test_complete_rag_chat_workflow(
         mock_openai_client.chat.completions.create.return_value = mock_stream
 
         # Simulate adding context to user message
-        messages: list[Message] = [{"role": "user", "content": f"Context: {context}\n\nQuestion: What does the process_data function do?"}]
+        messages: list[ChatMessage] = [
+            {"role": "user", "content": f"Context: {context}\n\nQuestion: What does the process_data function do?"}
+        ]
 
         response_chunks = list(stream_response(cast(Any, messages), mock_openai_client))
 
@@ -360,7 +362,7 @@ def test_error_handling_in_workflow(
         mock_openai_client = MagicMock()
         mock_openai_client.chat.completions.create.side_effect = Exception("API error")
 
-        messages: list[Message] = [{"role": "user", "content": "Hello"}]
+        messages: list[ChatMessage] = [{"role": "user", "content": "Hello"}]
 
         # Should raise the exception (as expected behavior)
         with pytest.raises(Exception, match="API error"):

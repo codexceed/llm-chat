@@ -1,12 +1,12 @@
 from hypothesis import given, strategies as st
 
-from chatbot.constants import EXTENSION_TO_LANGUAGE_MAPPING, FILE_EXTENSION_TYPE_MAPPING, FileTypes, Message
+from chatbot.constants import EXTENSION_TO_LANGUAGE_MAPPING, FILE_EXTENSION_TYPE_MAPPING, ChatMessage, FileTypes
 
 
 def test_message_structure() -> None:
     """Test that Message can be created with required fields."""
-    user_message: Message = {"role": "user", "content": "Hello"}
-    assistant_message: Message = {"role": "assistant", "content": "Hi there"}
+    user_message: ChatMessage = {"role": "user", "content": "Hello"}
+    assistant_message: ChatMessage = {"role": "assistant", "content": "Hi there"}
 
     assert user_message["role"] == "user"
     assert user_message["content"] == "Hello"
@@ -17,7 +17,7 @@ def test_message_structure() -> None:
 @given(content=st.text())
 def test_message_with_arbitrary_content(content: str) -> None:
     """Test Message creation with arbitrary content."""
-    message: Message = {"role": "user", "content": content}
+    message: ChatMessage = {"role": "user", "content": content}
     assert message["content"] == content
 
 
