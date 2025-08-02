@@ -1,18 +1,23 @@
 # Makefile for Python project automation
 # Include separate make files for organization
-include .makefiles/uv.mk
+include .makefiles/requirements.mk
 include .makefiles/lint.mk
 include .makefiles/test.mk
 
-.PHONY: help clean install-dev ci dev
+.PHONY: help clean ci dev
 
 # Default target
 help:
 	@echo "📋 Available targets:"
 	@echo ""
-	@echo "🔧 Setup:"
+	@echo "📦 Requirements:"
+	@echo "  install-all      - Install all dependencies (default)"
+	@echo "  install-base     - Install base/production dependencies"
+	@echo "  install-dev      - Install development dependencies"
+	@echo "  install-profiling- Install profiling dependencies"
 	@echo "  install-uv       - Install uv package manager"
-	@echo "  install-dev      - Install development dependencies (with uv)"
+	@echo ""
+	@echo "🔧 Setup:"
 	@echo "  dev             - Setup complete development environment"
 	@echo ""
 	@echo "🎨 Linting & Code Quality:"
@@ -34,11 +39,6 @@ help:
 	@echo "  clean           - Clean cache and build artifacts"
 	@echo ""
 
-# Install development dependencies
-install-dev: check-uv
-	@echo "📦 Installing development dependencies with uv..."
-	uv pip install -e ".[dev]"
-	@echo "✅ Development dependencies installed"
 
 # Clean cache and build artifacts
 clean:
@@ -61,7 +61,7 @@ ci: check test
 	@echo ""
 
 # Development workflow target
-dev: install-dev pre-commit-install
+dev: install-all pre-commit-install
 	@echo ""
 	@echo "🎉 Development environment setup complete!"
 	@echo "Run 'make lint-all' to verify everything is working"

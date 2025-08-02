@@ -20,6 +20,7 @@ dependencies = [
     "llama-index~=0.12.49",
     "llama-index-vector-stores-qdrant~=0.6.1",
     "llama-index-embeddings-openai~=0.3.1",
+    "llama-index-embeddings-huggingface~=0.5.5",
     "qdrant-client~=1.14.3",
     "tree-sitter~=0.24.0",
     "tree-sitter-c-sharp~=0.23.1",
@@ -46,6 +47,9 @@ profiling = [
     "psutil>=5.9.0",
     "py-spy>=0.3.14",
     "flameprof>=0.4.0",
+]
+all = [
+    "llm-chat[dev,profiling]",
 ]
 
 [project.scripts]
