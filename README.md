@@ -29,7 +29,14 @@ A modern chatbot application built with Streamlit that leverages Large Language 
 
 2. **Install the package:**
    ```bash
+   # Basic installation
    pip install -e .
+   
+   # Or install all dependencies (recommended for development)
+   pip install -e ".[all]"
+   
+   # Using make targets (see Requirements section below)
+   make install-all
    ```
 
 3. **Set up environment variables:**
@@ -85,18 +92,49 @@ docker-compose up qdrant
 
 **Note:** Update the model paths in `docker-compose.yaml` to match your local model storage.
 
+## Requirements Management
+
+The project provides flexible dependency installation through make targets:
+
+```bash
+# Install all dependencies (default, recommended)
+make install-all
+
+# Install only base/production dependencies
+make install-base
+
+# Install development dependencies only
+make install-dev
+
+# Install profiling dependencies only
+make install-profiling
+
+# Install uv package manager for faster installs
+make install-uv
+
+# Show all available requirements targets
+make -f .makefiles/requirements.mk help
+```
+
+### Available Dependency Groups
+
+- **Base**: Core application dependencies (streamlit, openai, llama-index, etc.)
+- **Dev**: Testing and linting tools (pytest, ruff, mypy, bandit)
+- **Profiling**: Performance analysis tools (matplotlib, plotly, py-spy)
+- **All**: Combines all dependency groups above
+
 ## Development
 
 ### Setup Development Environment
 
 ```bash
-# Install with development dependencies (uses uv for speed)
-make install-dev
+# Install all dependencies (includes dev and profiling tools)
+make install-all
 
 # Set up pre-commit hooks and complete dev environment
 make dev
 
-# Install uv package manager (if needed)
+# Install uv package manager for faster dependency management
 make install-uv
 ```
 
