@@ -172,9 +172,9 @@ def test_all_extensions_in_code_type() -> None:
     language_mapping_extensions = set(EXTENSION_TO_LANGUAGE_MAPPING.keys())
 
     # All extensions in language mapping should be in code extensions
-    assert language_mapping_extensions.issubset(
-        code_extensions
-    ), f"Extensions in language mapping but not in code type: {language_mapping_extensions - code_extensions}"
+    assert language_mapping_extensions.issubset(code_extensions), (
+        f"Extensions in language mapping but not in code type: {language_mapping_extensions - code_extensions}"
+    )
 
 
 def test_extension_format_consistency() -> None:

@@ -10,15 +10,20 @@ LOGGER = logger.get_logger(__name__)
 RAG_PROCESSOR = resources.get_rag_processor()
 
 
-def stream_response(messages: list[chat_types.ChatCompletionMessageParam], openai_client: openai.OpenAI) -> Iterator[str]:
+def stream_response(
+    messages: list[chat_types.ChatCompletionMessageParam], openai_client: openai.OpenAI
+) -> Iterator[str]:
     """Streams the response from the language model.
 
     Args:
-        messages: List of chat messages to send to the language model.
-        openai_client: OpenAI client instance for making API calls.
+        messages: A list of chat messages.
+        openai_client: The OpenAI client instance.
 
     Yields:
-        Response chunks from the language model as they are generated.
+        A string containing the next chunk of the response.
+
+    Raises:
+        ValueError: If no messages are provided for response generation.
     """
     if (
         not messages

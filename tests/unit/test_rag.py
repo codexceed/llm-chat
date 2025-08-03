@@ -10,11 +10,15 @@ from chatbot.rag import RAG
 
 @pytest.fixture
 def rag_instance() -> MagicMock:
-    """Fixture for a mock RAG instance."""
+    """Fixture for a mock RAG instance.
+
+    Returns:
+        A mock RAG instance.
+    """
     rag = MagicMock()
     rag._get_file_type = RAG._get_file_type.__get__(rag, RAG)
     rag._detect_code_language = RAG._detect_code_language.__get__(rag, RAG)
-    rag._cosine_similarity = RAG._cosine_similarity.__get__(rag, RAG)
+    rag._cosine_similarity = RAG._vectorized_cosine_similarity.__get__(rag, RAG)
     rag._vectorized_cosine_similarity = RAG._vectorized_cosine_similarity.__get__(rag, RAG)
     rag._deduplicate_chunks = RAG._deduplicate_chunks.__get__(rag, RAG)
     rag.process_web_urls = RAG.process_web_urls.__get__(rag, RAG)

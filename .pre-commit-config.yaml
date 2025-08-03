@@ -5,12 +5,12 @@
 repos:
   # Ruff - Modern Python linter and formatter
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.6
+    rev: v0.12.7
     hooks:
-      - id: ruff
+      - id: ruff-check
         name: ruff (Python linter)
         description: Run ruff linter with auto-fix
-        args: [--fix, --exit-non-zero-on-fix]
+        args: [--fix, --exit-non-zero-on-fix, --preview]
       - id: ruff-format
         name: ruff (Python formatter)
         description: Run ruff formatter

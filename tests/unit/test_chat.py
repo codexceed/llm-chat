@@ -1,188 +1,225 @@
-from unittest.mock import MagicMock, Mock
+import json
+import random
+from typing import Any, Final
 
+import httpx
+import hypothesis
 import openai
 import pytest
-from hypothesis import HealthCheck, given, settings, strategies as st
+import pytest_httpx
+from hypothesis import strategies as strat
 from openai.types import chat as chat_types
 
-from chatbot.utils.chat import stream_response
+from chatbot import settings
+from chatbot.utils import chat
+from tests.unit import utils as test_utils
+
+TEST_SERVER_BASE_URL: Final[str] = "http://testserver/v1"
+TEST_SERVER_CHAT_COMPLETIONS_URL: Final[str] = TEST_SERVER_BASE_URL + "/chat/completions"
+TEST_API_KEY: Final[str] = "test-key"
 
 
-@pytest.fixture
-def mock_client() -> MagicMock:
-    """Fixture for a mock OpenAI client."""
-    return MagicMock(spec=openai.OpenAI)
+@pytest.fixture(scope="module")
+def openai_client() -> openai.OpenAI:
+    """Fixture for OpenAI client.
+
+    Returns:
+        An OpenAI client instance.
+    """
+    return openai.OpenAI(base_url=TEST_SERVER_BASE_URL, api_key=TEST_API_KEY)
 
 
-def test_stream_response_valid_messages(mock_client: MagicMock) -> None:
-    """Test stream_response with valid user message."""
-    # Mock OpenAI client and stream response
-    mock_stream = MagicMock()
+@hypothesis.given(
+    messages=test_utils.chat_completion_messages_strategy(),
+    expected_chunks=test_utils.chat_completion_chunks_strategy(num_chunks=10),
+)
+@hypothesis.settings(suppress_health_check=[hypothesis.HealthCheck.function_scoped_fixture])
+def test_stream_response_valid_messages(
+    httpx_mock: pytest_httpx.HTTPXMock,
+    openai_client: openai.OpenAI,
+    messages: list[chat_types.ChatCompletionMessageParam],
+    expected_chunks: list[str],
+) -> None:
+    """Test stream_response with valid user message using generated streaming responses.
 
-    # Mock stream chunks
-    mock_chunks = [
-        Mock(choices=[Mock(delta=Mock(content="Hello"))]),
-        Mock(choices=[Mock(delta=Mock(content=" world"))]),
-        Mock(choices=[Mock(delta=Mock(content="!"))]),
-        Mock(choices=[Mock(delta=Mock(content=None))]),  # End of stream
-    ]
-    mock_stream.__iter__.return_value = iter(mock_chunks)
-    mock_client.chat.completions.create.return_value = mock_stream
+    Args:
+        httpx_mock: The mock HTTPX client.
+        openai_client: The OpenAI client.
+        messages: The user messages to send to the language model.
+        expected_chunks: The expected chunks of the streaming response.
+    """
+    captured_request: dict[str, Any] = {}
 
-    messages: list[chat_types.ChatCompletionMessageParam] = [{"role": "user", "content": "Hello"}]
+    def callback(request: httpx.Request) -> httpx.Response:
+        """Callback to capture and validate the request payload.
 
-    # Collect all chunks from the generator
-    response_chunks = list(stream_response(messages, mock_client))
+        Args:
+            request: The incoming httpx.Request.
 
-    assert response_chunks == ["Hello", " world", "!", ""]
-    mock_client.chat.completions.create.assert_called_once()
+        Returns:
+            A mock httpx.Response with streaming data.
+        """
+        captured_request["method"] = request.method
+        captured_request["url"] = str(request.url)
+        captured_request["headers"] = dict(request.headers)
+        captured_request["content"] = json.loads(request.content)
+
+        return httpx.Response(
+            status_code=200,
+            stream=pytest_httpx.IteratorStream([chunk.encode("utf-8") for chunk in expected_chunks]),
+        )
+
+    httpx_mock.add_callback(callback, method="POST", url=TEST_SERVER_CHAT_COMPLETIONS_URL)
+
+    # Validate chunks from the stream
+    idx = 0
+    for response_chunk in chat.stream_response(messages, openai_client):
+        assert response_chunk == expected_chunks[idx]
+
+    # Validate the captured request
+    assert captured_request["method"] == "POST"
+    headers = captured_request["headers"]
+    assert "authorization" in headers
+    assert headers["authorization"] == f"Bearer {TEST_API_KEY}"
+
+    # Validate the request payload structure
+    payload = captured_request["content"]
+    assert "model" in payload
+    assert "messages" in payload
+    assert "stream" in payload
+    assert "temperature" in payload
+    assert "max_tokens" in payload
+    assert "seed" in payload
+
+    # Validate specific values
+    assert payload["messages"] == messages
+    assert payload["stream"] is True
+    assert isinstance(payload["temperature"], (int, float))
+    assert isinstance(payload["max_tokens"], int)
+    assert isinstance(payload["seed"], (int, type(None)))
 
 
-def test_stream_response_empty_messages(mock_client: MagicMock) -> None:
-    """Test stream_response with empty messages list."""
+def test_stream_response_empty_messages(openai_client: openai.OpenAI) -> None:
+    """Test stream_response with empty messages list.
+
+    Args:
+        openai_client: The OpenAI client.
+    """
     with pytest.raises(ValueError, match="No messages provided for response generation"):
-        list(stream_response([], mock_client))
+        list(chat.stream_response([], openai_client))
 
 
-def test_stream_response_no_user_message(mock_client: MagicMock) -> None:
-    """Test stream_response when last message is not from user."""
+def test_stream_response_no_user_message(openai_client: openai.OpenAI) -> None:
+    """Test stream_response when last message is not from user.
+
+    Args:
+        openai_client: The OpenAI client.
+    """
     messages: list[chat_types.ChatCompletionMessageParam] = [{"role": "assistant", "content": "Hello"}]
 
     with pytest.raises(ValueError, match="No messages provided for response generation"):
-        list(stream_response(messages, mock_client))
+        list(chat.stream_response(messages, openai_client))
 
 
-def test_stream_response_empty_user_content(mock_client: MagicMock) -> None:
-    """Test stream_response with empty user message content."""
+def test_stream_response_empty_user_content(openai_client: openai.OpenAI) -> None:
+    """Test stream_response with empty user message content.
+
+    Args:
+        openai_client: The OpenAI client.
+    """
     messages: list[chat_types.ChatCompletionMessageParam] = [{"role": "user", "content": ""}]
 
     with pytest.raises(ValueError, match="No messages provided for response generation"):
-        list(stream_response(messages, mock_client))
+        list(chat.stream_response(messages, openai_client))
 
 
-def test_stream_response_whitespace_only_content(mock_client: MagicMock) -> None:
-    """Test stream_response with whitespace-only user message content."""
+def test_stream_response_whitespace_only_content(openai_client: openai.OpenAI) -> None:
+    """Test stream_response with whitespace-only user message content.
+
+    Args:
+        openai_client: The OpenAI client.
+    """
     messages: list[chat_types.ChatCompletionMessageParam] = [{"role": "user", "content": "   \n\t  "}]
 
     with pytest.raises(ValueError, match="No messages provided for response generation"):
-        list(stream_response(messages, mock_client))
+        list(chat.stream_response(messages, openai_client))
 
 
-def test_stream_response_non_string_content(mock_client: MagicMock) -> None:
-    """Test stream_response with non-string content."""
+def test_stream_response_non_string_content(openai_client: openai.OpenAI) -> None:
+    """Test stream_response with non-string content.
+
+    Args:
+        openai_client: The OpenAI client.
+    """
     # Content is not a string (could be list for multimodal)
     messages: list[chat_types.ChatCompletionMessageParam] = [
         {"role": "user", "content": [{"type": "text", "text": "Hello"}]}  # type: ignore
     ]
 
     with pytest.raises(ValueError, match="No messages provided for response generation"):
-        list(stream_response(messages, mock_client))
+        list(chat.stream_response(messages, openai_client))
 
 
-def test_stream_response_multiple_messages(mock_client: MagicMock) -> None:
-    """Test stream_response with multiple messages."""
-    mock_stream = MagicMock()
+@hypothesis.given(
+    temperature=strat.floats(min_value=0.0, max_value=1.0),
+    max_tokens=strat.integers(min_value=1, max_value=100),
+    model_name=strat.text(min_size=1, max_size=10),
+)
+@hypothesis.settings(suppress_health_check=[hypothesis.HealthCheck.function_scoped_fixture])
+def test_stream_response_uses_chat_settings(
+    httpx_mock: pytest_httpx.HTTPXMock,
+    openai_client: openai.OpenAI,
+    chatbot_settings: settings.Settings,
+    temperature: float,
+    max_tokens: int,
+    model_name: str,
+) -> None:
+    """Test that stream_response uses chat settings from configuration.
 
-    mock_chunks = [
-        Mock(choices=[Mock(delta=Mock(content="Response"))]),
-        Mock(choices=[Mock(delta=Mock(content=None))]),
-    ]
-    mock_stream.__iter__.return_value = iter(mock_chunks)
-    mock_client.chat.completions.create.return_value = mock_stream
+    Args:
+        httpx_mock: The mock HTTPX client.
+        openai_client: The OpenAI client.
+        chatbot_settings: A copy of default chatbot settings.
+        temperature: The temperature value to be used in the test.
+        max_tokens: The maximum number of tokens to generate.
+        model_name: The name of the model to be used in the test.
+    """
+    seed = random.randint(0, 1000000)
+    chatbot_settings.temperature = temperature
+    chatbot_settings.max_tokens = max_tokens
+    chatbot_settings.llm_model_name = model_name
+    chatbot_settings.seed = seed
+    messages: list[chat_types.ChatCompletionMessageParam] = [{"role": "user", "content": "Hello, how are you?"}]
+    expected_chunks = ["Hello", " there", "!"]
+    captured_request: dict[str, Any] = {}
 
-    messages: list[chat_types.ChatCompletionMessageParam] = [
-        {"role": "user", "content": "First message"},
-        {"role": "assistant", "content": "Assistant response"},
-        {"role": "user", "content": "Second message"},
-    ]
+    def callback(request: httpx.Request) -> httpx.Response:
+        """Callback to capture the request payload.
 
-    response_chunks = list(stream_response(messages, mock_client))
+        Args:
+            request: The incoming httpx.Request.
 
-    assert response_chunks == ["Response", ""]
+        Returns:
+            A mock httpx.Response with streaming data.
+        """
+        captured_request["content"] = json.loads(request.content)
 
-    # Verify that all messages were passed to the API
-    call_args = mock_client.chat.completions.create.call_args
-    assert call_args[1]["messages"] == messages
+        return httpx.Response(
+            status_code=200,
+            stream=pytest_httpx.IteratorStream([chunk.encode("utf-8") for chunk in expected_chunks]),
+        )
 
+    httpx_mock.add_callback(callback, method="POST", url=TEST_SERVER_CHAT_COMPLETIONS_URL)
 
-def test_stream_response_api_parameters(mock_client: MagicMock) -> None:
-    """Test that stream_response passes correct parameters to OpenAI API."""
-    mock_stream = MagicMock()
-    mock_stream.__iter__.return_value = iter([Mock(choices=[Mock(delta=Mock(content=None))])])
-    mock_client.chat.completions.create.return_value = mock_stream
+    # Execute the stream_response function
+    list(chat.stream_response(messages, openai_client))
 
-    messages: list[chat_types.ChatCompletionMessageParam] = [{"role": "user", "content": "Test message"}]
+    # Validate that chat settings are properly sent in the request
+    payload = captured_request["content"]
 
-    list(stream_response(messages, mock_client))
-
-    # Verify API call parameters
-    call_args = mock_client.chat.completions.create.call_args
-    assert call_args[1]["stream"] is True
-    assert "model" in call_args[1]
-    assert "temperature" in call_args[1]
-    assert "max_tokens" in call_args[1]
-    assert "seed" in call_args[1]
-
-
-@given(content=st.text(min_size=1))
-@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
-def test_stream_response_with_arbitrary_user_content(mock_client: MagicMock, content: str) -> None:
-    """Test stream_response with arbitrary user content."""
-    # Skip whitespace-only strings as they're handled by validation
-    if not content.strip():
-        pytest.skip("Whitespace-only content is invalid")
-
-    mock_stream = MagicMock()
-    mock_stream.__iter__.return_value = iter([Mock(choices=[Mock(delta=Mock(content="OK"))])])
-    mock_client.chat.completions.create.return_value = mock_stream
-
-    messages: list[chat_types.ChatCompletionMessageParam] = [{"role": "user", "content": content}]
-
-    # Should not raise an exception
-    response_chunks = list(stream_response(messages, mock_client))
-    assert isinstance(response_chunks, list)
-
-
-def test_stream_response_handles_none_content_chunks(mock_client: MagicMock) -> None:
-    """Test that stream_response properly handles None content in chunks."""
-    mock_stream = MagicMock()
-
-    # Mix of content and None chunks
-    mock_chunks = [
-        Mock(choices=[Mock(delta=Mock(content="Hello"))]),
-        Mock(choices=[Mock(delta=Mock(content=None))]),  # None content
-        Mock(choices=[Mock(delta=Mock(content=" world"))]),
-        Mock(choices=[Mock(delta=Mock(content=None))]),  # None content
-    ]
-    mock_stream.__iter__.return_value = iter(mock_chunks)
-    mock_client.chat.completions.create.return_value = mock_stream
-
-    messages: list[chat_types.ChatCompletionMessageParam] = [{"role": "user", "content": "Test"}]
-
-    response_chunks = list(stream_response(messages, mock_client))
-
-    # None content should be converted to empty strings
-    assert response_chunks == ["Hello", "", " world", ""]
-
-
-def test_stream_response_conversation_history(mock_client: MagicMock) -> None:
-    """Test stream_response with conversation history."""
-    mock_stream = MagicMock()
-    mock_stream.__iter__.return_value = iter([Mock(choices=[Mock(delta=Mock(content="Response"))])])
-    mock_client.chat.completions.create.return_value = mock_stream
-
-    # Simulate a conversation with history
-    messages: list[chat_types.ChatCompletionMessageParam] = [
-        {"role": "user", "content": "What is 2+2?"},
-        {"role": "assistant", "content": "2+2 equals 4."},
-        {"role": "user", "content": "What about 3+3?"},
-    ]
-
-    response_chunks = list(stream_response(messages, mock_client))
-
-    assert response_chunks == ["Response"]
-
-    # Verify the entire conversation history was sent
-    call_args = mock_client.chat.completions.create.call_args
-    assert len(call_args[1]["messages"]) == 3
-    assert call_args[1]["messages"][-1]["content"] == "What about 3+3?"
+    # Validate specific settings values are used
+    assert payload["model"] == model_name
+    assert payload["temperature"] == temperature
+    assert payload["max_tokens"] == max_tokens
+    assert payload["seed"] == seed
+    assert payload["stream"] is True

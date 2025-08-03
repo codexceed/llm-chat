@@ -1,3 +1,5 @@
+"""Common constants for the chatbot application."""
+
 import enum
 from typing import Literal, TypedDict
 

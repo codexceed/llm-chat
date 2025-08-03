@@ -11,7 +11,9 @@ def render_sidebar() -> None:
         st.code(CHATBOT_SETTINGS.llm_model_name, language="bash")
         CHATBOT_SETTINGS.temperature = st.slider("Temperature", 0.0, 1.0, CHATBOT_SETTINGS.temperature)
         CHATBOT_SETTINGS.max_tokens = st.slider("Max Tokens", 1, 4096, CHATBOT_SETTINGS.max_tokens)
-        CHATBOT_SETTINGS.repetition_penalty = st.slider("Repetition Penalty", 1.0, 2.0, CHATBOT_SETTINGS.repetition_penalty)
+        CHATBOT_SETTINGS.repetition_penalty = st.slider(
+            "Repetition Penalty", 1.0, 2.0, CHATBOT_SETTINGS.repetition_penalty
+        )
         CHATBOT_SETTINGS.seed = st.number_input("Seed", 0, 1000000, CHATBOT_SETTINGS.seed)
 
         st.title("Chat Controls")
@@ -20,7 +22,11 @@ def render_sidebar() -> None:
 
 
 def render_chat_interface() -> chat.ChatInputValue | None:
-    """Renders the chat interface, including the chat history and input."""
+    """Renders the chat interface, including the chat history and input.
+
+    Returns:
+       The user's input as a `ChatInputValue` object, or `None` if no input
+    """
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])

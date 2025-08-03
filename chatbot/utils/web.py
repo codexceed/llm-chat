@@ -6,7 +6,9 @@ import httpx
 from streamlit import logger
 
 LOGGER = logger.get_logger(__name__)
-URL_REGEX = re.compile(r"https?:\/\/(?:[-\w.])+(?:\:[0-9]+)?(?:\/(?:[\w\/_.])*(?:\?(?:[\w&=%.])*)?(?:\#(?:[\w.])*)?)?", re.IGNORECASE)
+URL_REGEX = re.compile(
+    r"https?:\/\/(?:[-\w.])+(?:\:[0-9]+)?(?:\/(?:[\w\/_.])*(?:\?(?:[\w&=%.])*)?(?:\#(?:[\w.])*)?)?", re.IGNORECASE
+)
 
 
 def extract_urls_from_text(text: str) -> list[str]:

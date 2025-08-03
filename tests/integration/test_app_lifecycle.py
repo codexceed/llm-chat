@@ -21,9 +21,18 @@ class MockUploadedFile(UploadedFile):
         self.size = len(content)
 
     def getvalue(self) -> bytes:
+        """Return the content of the file."""
         return self._content
 
     def read(self, size: int | None = -1) -> bytes:
+        """Read the content of the file.
+
+        Args:
+            size: The number of bytes to read. If not specified, read all bytes.
+
+        Returns:
+            The content of the file up to the specified size.
+        """
         if size is None or size == -1:
             return self._content
         return self._content[:size]
@@ -31,7 +40,11 @@ class MockUploadedFile(UploadedFile):
 
 @pytest.fixture
 def mock_settings() -> Settings:
-    """Create mock settings for testing."""
+    """Create mock settings for testing.
+
+    Returns:
+        A mock Settings object.
+    """
     from chatbot.settings import QdrantSettings, RAGSettings
 
     return Settings(
@@ -61,7 +74,11 @@ def mock_settings() -> Settings:
 
 @pytest.fixture
 def mock_qdrant_client() -> Generator[MagicMock, None, None]:
-    """Create mock Qdrant client."""
+    """Create mock Qdrant client.
+
+    Yields:
+        A mock Qdrant client instance.
+    """
     with (
         patch("qdrant_client.QdrantClient") as mock_client,
         patch("qdrant_client.http.exceptions.UnexpectedResponse", Exception) as mock_exception,
@@ -78,7 +95,11 @@ def mock_qdrant_client() -> Generator[MagicMock, None, None]:
 
 @pytest.fixture
 def mock_embedding_model() -> Generator[MagicMock, None, None]:
-    """Create mock embedding model."""
+    """Create mock embedding model.
+
+    Yields:
+        A mock embedding model instance.
+    """
     with (
         patch("llama_index.embeddings.huggingface.HuggingFaceEmbedding") as mock_model,
         patch("llama_index.core.embeddings.utils.resolve_embed_model") as mock_resolve,
@@ -102,7 +123,11 @@ def mock_embedding_model() -> Generator[MagicMock, None, None]:
 
 @pytest.fixture
 def mock_vector_store() -> Generator[MagicMock, None, None]:
-    """Create mock vector store."""
+    """Create mock vector store.
+
+    Yields:
+        A mock vector store instance.
+    """
     with patch("llama_index.vector_stores.qdrant.QdrantVectorStore") as mock_store:
         mock_instance = MagicMock()
         mock_store.return_value = mock_instance
@@ -111,7 +136,11 @@ def mock_vector_store() -> Generator[MagicMock, None, None]:
 
 @pytest.fixture
 def mock_vector_index() -> Generator[MagicMock, None, None]:
-    """Create mock vector store index."""
+    """Create mock vector store index.
+
+    Yields:
+        A mock vector store index instance.
+    """
     with patch("llama_index.core.VectorStoreIndex.from_vector_store") as mock_index:
         mock_instance = MagicMock()
         mock_index.return_value = mock_instance
@@ -320,7 +349,9 @@ async def test_complete_rag_chat_workflow(
         mock_openai_client.chat.completions.create.return_value = mock_stream
 
         # Simulate adding context to user message
-        messages: list[Message] = [{"role": "user", "content": f"Context: {context}\n\nQuestion: What does the process_data function do?"}]
+        messages: list[Message] = [
+            {"role": "user", "content": f"Context: {context}\n\nQuestion: What does the process_data function do?"}
+        ]
 
         response_chunks = list(stream_response(cast(Any, messages), mock_openai_client))
 

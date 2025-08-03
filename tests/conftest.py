@@ -1,5 +1,6 @@
 """Shared test configuration and fixtures."""
 
+import copy
 import os
 import tempfile
 from collections.abc import Generator
@@ -10,6 +11,7 @@ import pytest
 from hypothesis import settings as hypothesis_settings
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
+from chatbot import settings
 from chatbot.settings import QdrantSettings, RAGSettings, Settings
 
 # Configure Hypothesis settings for faster test runs
@@ -32,13 +34,21 @@ class MockUploadedFile(UploadedFile):
         return self._content
 
     def read(self, size: int | None = -1) -> bytes:
-        """Read file content."""
+        """Read file content.
+
+        Returns:
+            The content up to `size` bytes, or the entire content if `size` is not specified.
+        """
         if size is None or size == -1:
             return self._content
         return self._content[:size]
 
     def seek(self, offset: int, whence: int = 0) -> int:
-        """Seek to position (no-op for mock)."""
+        """Seek to position (no-op for mock).
+
+        Returns:
+            The new position.
+        """
         return 0
 
     def tell(self) -> int:
@@ -48,14 +58,22 @@ class MockUploadedFile(UploadedFile):
 
 @pytest.fixture
 def temp_directory() -> Generator[Path, None, None]:
-    """Create a temporary directory for test files."""
+    """Create a temporary directory for test files.
+
+    Yields:
+        The path to the temporary directory.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         yield Path(temp_dir)
 
 
 @pytest.fixture
 def sample_files(temp_directory: Path) -> dict[str, Path]:
-    """Create sample files for testing."""
+    """Create sample files for testing.
+
+    Returns:
+        A dictionary mapping file types to their paths.
+    """
     files = {}
 
     # Python file
@@ -226,7 +244,11 @@ const app = new ChatApp();
 
 @pytest.fixture
 def mock_uploaded_files(sample_files: dict[str, Path]) -> list[MockUploadedFile]:
-    """Create mock uploaded files from sample files."""
+    """Create mock uploaded files from sample files.
+
+    Returns:
+        A list of mock uploaded files.
+    """
     uploaded_files = []
 
     for file_type, file_path in sample_files.items():
@@ -240,7 +262,11 @@ def mock_uploaded_files(sample_files: dict[str, Path]) -> list[MockUploadedFile]
 
 
 def _get_mimetype(suffix: str) -> str:
-    """Get MIME type for file extension."""
+    """Get MIME type for file extension.
+
+    Returns:
+        The MIME type for the given file extension.
+    """
     mimetypes = {
         ".py": "text/x-python",
         ".js": "application/javascript",
@@ -260,7 +286,11 @@ def _get_mimetype(suffix: str) -> str:
 
 @pytest.fixture
 def test_settings() -> Settings:
-    """Create test settings with safe defaults."""
+    """Create test settings with safe defaults.
+
+    Returns:
+        A Settings object with test-safe values.
+    """
     return Settings(
         openai_api_base="http://localhost:8000/v1",
         openai_api_key="test-key",
@@ -272,7 +302,9 @@ def test_settings() -> Settings:
         host="127.0.0.1",
         port=8080,
         debug=True,
-        qdrant=QdrantSettings(url="http://localhost:6333", api_key=None, collection_name="test_collection", vector_size=384),
+        qdrant=QdrantSettings(
+            url="http://localhost:6333", api_key=None, collection_name="test_collection", vector_size=384
+        ),
         rag=RAGSettings(
             enabled=True,
             embedding_model="test-embedding-model",
@@ -297,7 +329,11 @@ def test_settings() -> Settings:
 
 @pytest.fixture
 def mock_openai_client() -> MagicMock:
-    """Create a mock OpenAI client for testing."""
+    """Create a mock OpenAI client for testing.
+
+    Returns:
+        A mock OpenAI client.
+    """
     mock_client = MagicMock()
 
     # Mock streaming response
@@ -315,7 +351,11 @@ def mock_openai_client() -> MagicMock:
 
 @pytest.fixture
 def mock_qdrant_client() -> MagicMock:
-    """Create a mock Qdrant client for testing."""
+    """Create a mock Qdrant client for testing.
+
+    Returns:
+        A mock Qdrant client.
+    """
     mock_client = MagicMock()
 
     # Mock collection operations
@@ -329,7 +369,11 @@ def mock_qdrant_client() -> MagicMock:
 
 @pytest.fixture
 def mock_embedding_model() -> MagicMock:
-    """Create a mock embedding model for testing."""
+    """Create a mock embedding model for testing.
+
+    Returns:
+        A mock embedding model.
+    """
     mock_model = MagicMock()
 
     # Mock embedding generation
@@ -345,7 +389,11 @@ def mock_embedding_model() -> MagicMock:
 
 @pytest.fixture
 def mock_vector_store() -> MagicMock:
-    """Create a mock vector store for testing."""
+    """Create a mock vector store for testing.
+
+    Returns:
+        A mock vector store.
+    """
     mock_store = MagicMock()
 
     # Mock vector operations
@@ -358,7 +406,11 @@ def mock_vector_store() -> MagicMock:
 
 @pytest.fixture
 def mock_vector_index() -> MagicMock:
-    """Create a mock vector index for testing."""
+    """Create a mock vector index for testing.
+
+    Returns:
+        A mock vector index.
+    """
     mock_index = MagicMock()
 
     # Mock retriever
@@ -375,7 +427,11 @@ def mock_vector_index() -> MagicMock:
 
 @pytest.fixture
 def mock_httpx_client() -> MagicMock:
-    """Create a mock httpx async client for testing."""
+    """Create a mock httpx async client for testing.
+
+    Returns:
+        A mock httpx async client.
+    """
     mock_client = MagicMock()
 
     # Mock successful response
@@ -408,7 +464,11 @@ def isolate_environment() -> Generator[None, None, None]:
 
 @pytest.fixture
 def patch_llama_index() -> Generator[dict[str, MagicMock], None, None]:
-    """Patch LlamaIndex components for testing."""
+    """Patch LlamaIndex components for testing.
+
+    Yields:
+        A dictionary of patched LlamaIndex components.
+    """
     patches = {}
 
     with (
@@ -429,7 +489,11 @@ def patch_llama_index() -> Generator[dict[str, MagicMock], None, None]:
 
 @pytest.fixture
 def sample_chat_messages() -> list[dict[str, str]]:
-    """Create sample chat messages for testing."""
+    """Create sample chat messages for testing.
+
+    Returns:
+        A list of sample chat messages.
+    """
     return [
         {"role": "user", "content": "Hello, how are you?"},
         {"role": "assistant", "content": "I'm doing well, thank you! How can I help you today?"},
@@ -444,7 +508,11 @@ def sample_chat_messages() -> list[dict[str, str]]:
 
 @pytest.fixture
 def sample_web_urls() -> list[str]:
-    """Create sample web URLs for testing."""
+    """Create sample web URLs for testing.
+
+    Returns:
+        A list of sample web URLs.
+    """
     return [
         "https://example.com",
         "http://test.org/page",
@@ -456,7 +524,11 @@ def sample_web_urls() -> list[str]:
 
 @pytest.fixture
 def sample_web_content() -> dict[str, str]:
-    """Create sample web content for testing."""
+    """Create sample web content for testing.
+
+    Returns:
+        A dictionary of sample web content.
+    """
     return {
         "https://example.com": """
         <html>
@@ -503,5 +575,13 @@ def sample_web_content() -> dict[str, str]:
     }
 
 
-# Test markers for different test categories
-# These are defined for reference - pytest will automatically create them when used
+@pytest.fixture(scope="function")
+def chatbot_settings() -> Generator[settings.Settings, None, None]:
+    """Fixture to temporarily modify and restore chatbot settings during tests.
+
+    Yields:
+        Reference to chatbot settings.
+    """
+    original_settings = copy.deepcopy(settings.CHATBOT_SETTINGS)
+    yield settings.CHATBOT_SETTINGS
+    settings.CHATBOT_SETTINGS = original_settings

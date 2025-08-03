@@ -159,7 +159,9 @@ async def test_fetch_url_http_error() -> None:
     """Test handling of HTTP errors during fetch."""
     mock_client = AsyncMock(spec=httpx.AsyncClient)
     mock_response = MagicMock()
-    mock_response.raise_for_status.side_effect = httpx.HTTPStatusError("404 Not Found", request=MagicMock(), response=MagicMock())
+    mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "404 Not Found", request=MagicMock(), response=MagicMock()
+    )
     mock_client.get.return_value = mock_response
 
     content = await fetch_content_from_urls(["http://notfound.com"], mock_client)
@@ -180,7 +182,9 @@ async def test_fetch_mixed_success_failure() -> None:
 
     # Second URL fails
     error_response = MagicMock()
-    error_response.raise_for_status.side_effect = httpx.HTTPStatusError("500 Server Error", request=MagicMock(), response=MagicMock())
+    error_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "500 Server Error", request=MagicMock(), response=MagicMock()
+    )
 
     mock_client.get.side_effect = [success_response, error_response]
 
@@ -257,7 +261,9 @@ async def test_lookup_with_failed_fetches() -> None:
     """Test lookup when some URL fetches fail."""
     mock_client = AsyncMock(spec=httpx.AsyncClient)
     mock_response = MagicMock()
-    mock_response.raise_for_status.side_effect = httpx.HTTPStatusError("404 Not Found", request=MagicMock(), response=MagicMock())
+    mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "404 Not Found", request=MagicMock(), response=MagicMock()
+    )
     mock_client.get.return_value = mock_response
 
     prompt = "Check http://broken.com"
