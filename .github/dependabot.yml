@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # Python dependencies via pyproject.toml
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    target-branch: main
+    open-pull-requests-limit: 10
+    reviewers:
+      - "codexceed"
+    assignees:
+      - "codexceed"
+    commit-message:
+      prefix: "build"
+      prefix-development: "build"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "python"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
