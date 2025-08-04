@@ -1,0 +1,97 @@
+{
+  "description": "Test URL configurations for web lookup evaluation",
+  "categories": {
+    "popular_sites": {
+      "description": "Popular websites that should generally be reliable",
+      "urls": [
+        "https://www.google.com",
+        "https://www.github.com",
+        "https://www.stackoverflow.com",
+        "https://www.wikipedia.org",
+        "https://www.python.org"
+      ]
+    },
+    "news_sites": {
+      "description": "News and media sites",
+      "urls": [
+        "https://www.bbc.com/news",
+        "https://www.reuters.com",
+        "https://www.cnn.com"
+      ]
+    },
+    "tech_sites": {
+      "description": "Technology and developer sites",
+      "urls": [
+        "https://news.ycombinator.com",
+        "https://www.reddit.com",
+        "https://www.medium.com"
+      ]
+    },
+    "documentation_sites": {
+      "description": "Documentation and reference sites",
+      "urls": [
+        "https://docs.python.org/3/",
+        "https://httpx.readthedocs.io",
+        "https://docs.streamlit.io/"
+      ]
+    },
+    "api_endpoints": {
+      "description": "API endpoints (some may fail as expected)",
+      "urls": [
+        "https://api.github.com",
+        "https://jsonplaceholder.typicode.com/posts/1",
+        "https://httpbin.org/json"
+      ]
+    },
+    "redirect_cases": {
+      "description": "Redirect scenarios",
+      "urls": [
+        "http://google.com"
+      ]
+    }
+  },
+  "test_sets": {
+    "default": {
+      "description": "Complete default test set with all categories",
+      "categories": [
+        "popular_sites",
+        "news_sites", 
+        "tech_sites",
+        "documentation_sites",
+        "api_endpoints",
+        "edge_cases",
+        "redirect_cases"
+      ]
+    },
+    "minimal": {
+      "description": "Minimal test set for quick testing",
+      "urls": [
+        "https://www.google.com",
+        "https://www.github.com",
+        "https://www.example.com",
+        "https://httpstat.us/404",
+        "https://this-domain-definitely-does-not-exist.com"
+      ]
+    },
+    "high_reliability": {
+      "description": "High-reliability sites that should rarely fail",
+      "urls": [
+        "https://www.google.com",
+        "https://www.github.com",
+        "https://www.wikipedia.org",
+        "https://www.example.com",
+        "https://docs.python.org/3/"
+      ]
+    },
+    "performance": {
+      "description": "Performance test URLs (mix of fast and slow sites)",
+      "urls": [
+        "https://www.google.com",
+        "https://www.github.com",
+        "https://www.cnn.com",
+        "https://api.github.com",
+        "https://httpbin.org/json"
+      ]
+    }
+  }
+}

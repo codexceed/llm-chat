@@ -154,7 +154,7 @@ def test_cosine_similarity_arbitrary_vectors(rag_instance: MagicMock, vec1: list
     # Create a second vector of same length
     vec2 = [x + 1.0 for x in vec1]
 
-    similarity = rag_instance._cosine_similarity(vec1, vec2)
+    similarity = rag_instance._vectorized_cosine_similarity(vec1, vec2)
     assert isinstance(similarity, float)
     # Allow for floating point precision errors
     assert -1.01 <= similarity <= 1.01

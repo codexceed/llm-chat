@@ -4,10 +4,10 @@ include = [
     "chatbot/**/*.py",
     "tests/**/*.py",
     "pyproject.toml",
+    "scripts/**/*.py",
 ]
 exclude = [
     "docs/*",
-    "scripts/*"
 ]
 src = ["chatbot", "tests"]
 

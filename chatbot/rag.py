@@ -3,7 +3,7 @@
 import tempfile
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeAlias
 
 import httpx
 import numpy as np
@@ -21,6 +21,8 @@ from chatbot.settings import CHATBOT_SETTINGS
 from chatbot.utils import web
 
 LOGGER = logger.get_logger(__name__)
+
+EmbeddingVectorType: TypeAlias = np.ndarray[Any, np.dtype[np.float64]]
 
 
 class RAG:
@@ -256,7 +258,9 @@ class RAG:
 
         return deduplicated_chunks
 
-    def _vectorized_cosine_similarity(self, embeddings1: np.ndarray, embeddings2: np.ndarray) -> np.ndarray:
+    def _vectorized_cosine_similarity(
+        self, embeddings1: EmbeddingVectorType, embeddings2: EmbeddingVectorType
+    ) -> EmbeddingVectorType:
         """Calculate vectorized cosine similarity between embedding matrices.
 
         Args:
@@ -274,8 +278,8 @@ class RAG:
         norm1 = np.where(norm1 == 0, 1, norm1)
         norm2 = np.where(norm2 == 0, 1, norm2)
 
-        normalized1: np.ndarray = embeddings1 / norm1
-        normalized2: np.ndarray = embeddings2 / norm2
+        normalized1: EmbeddingVectorType = embeddings1 / norm1
+        normalized2: EmbeddingVectorType = embeddings2 / norm2
 
         # Compute cosine similarity via dot product of normalized vectors
         return np.dot(normalized1, normalized2.T)  # type: ignore
