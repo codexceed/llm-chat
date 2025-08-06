@@ -3,7 +3,7 @@
 import tempfile
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeAlias
 
 import httpx
 import numpy as np
@@ -22,6 +22,8 @@ from chatbot.utils import web
 
 LOGGER = logger.get_logger(__name__)
 
+EmbeddingVectorType: TypeAlias = np.ndarray[Any, np.dtype[np.float64]]
+
 
 class RAG:
     """Handles document processing and retrieval for RAG functionality."""
@@ -29,7 +31,9 @@ class RAG:
     def __init__(self) -> None:
         """Initialize the RAG processor with Qdrant vector store and hybrid search."""
         LOGGER.info("Initializing RAG processor with Qdrant hybrid vector store.")
-        self.client = qdrant_client.QdrantClient(url=CHATBOT_SETTINGS.qdrant.url, api_key=CHATBOT_SETTINGS.qdrant.api_key)
+        self.client = qdrant_client.QdrantClient(
+            url=CHATBOT_SETTINGS.qdrant.url, api_key=CHATBOT_SETTINGS.qdrant.api_key
+        )
         self.embedding_model = huggingface.HuggingFaceEmbedding(
             model_name=CHATBOT_SETTINGS.rag.embedding_model, device=CHATBOT_SETTINGS.rag.device
         )
@@ -54,7 +58,9 @@ class RAG:
                 client=self.client,
                 collection_name=CHATBOT_SETTINGS.qdrant.collection_name,
             )
-        self.index = core.VectorStoreIndex.from_vector_store(vector_store=self.vector_store, embed_model=self.embedding_model)  # type: ignore
+        self.index = core.VectorStoreIndex.from_vector_store(
+            vector_store=self.vector_store, embed_model=self.embedding_model
+        )  # type: ignore
 
         # Configure retriever with hybrid search parameters
         retriever_kwargs: dict[str, Any] = {"similarity_top_k": CHATBOT_SETTINGS.rag.hybrid_top_k}
@@ -92,7 +98,9 @@ class RAG:
             chunk_size=CHATBOT_SETTINGS.rag.chunk_size,
             chunk_overlap=CHATBOT_SETTINGS.rag.chunk_overlap,
         )
-        self._sentence_pipeline = ingestion.IngestionPipeline(transformations=[self._sentence_parser, self.embedding_model])
+        self._sentence_pipeline = ingestion.IngestionPipeline(
+            transformations=[self._sentence_parser, self.embedding_model]
+        )
 
         if CHATBOT_SETTINGS.rag.use_adaptive_parsing:
             self._markdown_parser = node_parser.MarkdownNodeParser()
@@ -105,9 +113,13 @@ class RAG:
             )
 
             # Initialize pipelines (excluding code pipeline - created dynamically)
-            self._markdown_pipeline = ingestion.IngestionPipeline(transformations=[self._markdown_parser, self.embedding_model])
+            self._markdown_pipeline = ingestion.IngestionPipeline(
+                transformations=[self._markdown_parser, self.embedding_model]
+            )
             self._html_pipeline = ingestion.IngestionPipeline(transformations=[self._html_parser, self.embedding_model])
-            self._semantic_pipeline = ingestion.IngestionPipeline(transformations=[self._semantic_parser, self.embedding_model])
+            self._semantic_pipeline = ingestion.IngestionPipeline(
+                transformations=[self._semantic_parser, self.embedding_model]
+            )
 
     def process_uploaded_files(self, uploaded_files: list[uploaded_file_manager.UploadedFile]) -> None:
         """Process and index uploaded files.
@@ -188,7 +200,9 @@ class RAG:
             # Apply relevance filtering if enabled using node scores
             if CHATBOT_SETTINGS.rag.enable_relevance_filtering:
                 filtered_nodes = [
-                    node for node in nodes if node.score is not None and node.score >= CHATBOT_SETTINGS.rag.relevance_threshold
+                    node
+                    for node in nodes
+                    if node.score is not None and node.score >= CHATBOT_SETTINGS.rag.relevance_threshold
                 ]
                 LOGGER.info(
                     f"Filtered {len(nodes)} -> {len(filtered_nodes)} nodes by relevance (threshold: {CHATBOT_SETTINGS.rag.relevance_threshold})"
@@ -244,7 +258,9 @@ class RAG:
 
         return deduplicated_chunks
 
-    def _vectorized_cosine_similarity(self, embeddings1: np.ndarray, embeddings2: np.ndarray) -> np.ndarray:
+    def _vectorized_cosine_similarity(
+        self, embeddings1: EmbeddingVectorType, embeddings2: EmbeddingVectorType
+    ) -> EmbeddingVectorType:
         """Calculate vectorized cosine similarity between embedding matrices.
 
         Args:
@@ -262,8 +278,8 @@ class RAG:
         norm1 = np.where(norm1 == 0, 1, norm1)
         norm2 = np.where(norm2 == 0, 1, norm2)
 
-        normalized1: np.ndarray = embeddings1 / norm1
-        normalized2: np.ndarray = embeddings2 / norm2
+        normalized1: EmbeddingVectorType = embeddings1 / norm1
+        normalized2: EmbeddingVectorType = embeddings2 / norm2
 
         # Compute cosine similarity via dot product of normalized vectors
         return np.dot(normalized1, normalized2.T)  # type: ignore
@@ -363,7 +379,9 @@ class RAG:
             try:
                 if language == "unknown":
                     # Fallback to semantic splitter for unknown code languages
-                    LOGGER.warning(f"Unknown code language, falling back to semantic splitter for {len(docs)} documents")
+                    LOGGER.warning(
+                        f"Unknown code language, falling back to semantic splitter for {len(docs)} documents"
+                    )
                     nodes = self._semantic_pipeline.run(documents=docs)
                 else:
                     # Create language-specific code parser

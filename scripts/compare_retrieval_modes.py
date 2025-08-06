@@ -11,6 +11,7 @@ The script will:
 - Run various queries to demonstrate retrieval differences
 - Compare results and highlight when hybrid performs better
 """
+
 import json
 import logging
 import sys
@@ -32,9 +33,19 @@ from qdrant_client.http import models
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+# ruff: noqa: T201
+
 
 def load_sample_documents() -> list[dict[str, Any]]:
-    """Load sample documents from JSON file."""
+    """Load sample documents from JSON file.
+
+    Returns:
+        List of document dictionaries containing title and content
+
+    Raises:
+        FileNotFoundError: If the sample documents file doesn't exist
+        JSONDecodeError: If the JSON file is malformed
+    """
     data_dir = Path(__file__).parent / "data"
     documents_file = data_dir / "sample_documents.json"
 
@@ -50,7 +61,15 @@ def load_sample_documents() -> list[dict[str, Any]]:
 
 
 def load_test_queries() -> list[dict[str, Any]]:
-    """Load test queries from JSON file."""
+    """Load test queries from JSON file.
+
+    Returns:
+        List of test query dictionaries with query, description, and expected results
+
+    Raises:
+        FileNotFoundError: If the test queries file doesn't exist
+        JSONDecodeError: If the JSON file is malformed
+    """
     data_dir = Path(__file__).parent / "data"
     queries_file = data_dir / "test_queries.json"
 
@@ -123,7 +142,9 @@ class RetrievalComparer:
 
         # Hybrid vector store with BM42 sparse model
         hybrid_vector_store = qdrant_vector_store.QdrantVectorStore(
-            client=self.client, collection_name="hybrid_test", fastembed_sparse_model="Qdrant/bm42-all-minilm-l6-v2-attentions"
+            client=self.client,
+            collection_name="hybrid_test",
+            fastembed_sparse_model="Qdrant/bm42-all-minilm-l6-v2-attentions",
         )
 
         # Load data from JSON files
@@ -131,7 +152,8 @@ class RetrievalComparer:
 
         # Create documents
         documents: list[Document] = [
-            Document(text=f"{doc['title']}\n\n{doc['content']}", metadata={"title": doc["title"]}) for doc in sample_documents
+            Document(text=f"{doc['title']}\n\n{doc['content']}", metadata={"title": doc["title"]})
+            for doc in sample_documents
         ]
 
         # Create indexes
@@ -350,7 +372,9 @@ class RetrievalComparer:
             print("  → Performance depends on query type and content domain")
 
         print("  → Consider query complexity: Hybrid better for specific terms")
-        print(f"  → Consider performance: Dense ~{abs(avg_hybrid_time - avg_dense_time) / avg_dense_time * 100:.1f}% faster on average")
+        print(
+            f"  → Consider performance: Dense ~{abs(avg_hybrid_time - avg_dense_time) / avg_dense_time * 100:.1f}% faster on average"
+        )
 
 
 def main() -> None:

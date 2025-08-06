@@ -1,3 +1,5 @@
+"""Entry point for the chatbot CLI."""
+
 import os
 import sys
 
