@@ -15,7 +15,7 @@ license = { text = "MIT" }
 keywords = ["chatbot", "streamlit", "ai"]
 dependencies = [
     "streamlit~=1.47.1",
-    "pydantic-settings~=2.0.3",
+    "pydantic-settings~=2.10.1",
     "openai~=1.98.0",
     "llama-index~=0.13.0",
     "llama-index-vector-stores-qdrant~=0.7.1",
@@ -40,7 +40,7 @@ dev = [
     "pytest-httpx~=0.35.0",
     "hypothesis~=6.120.0",
     "ruff~=0.12.2",
-    "mypy~=1.16.1",
+    "mypy~=1.17.1",
     "bandit~=1.8.6",
     "gibberish-detector~=0.1.1",
 ]
