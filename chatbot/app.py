@@ -87,7 +87,7 @@ def main() -> None:
             if isinstance(response, str):
                 st.session_state.messages.append(constants.Message(role="assistant", content=response))
             else:
-                raise TypeError("Expected response to be str, got %s", type(response).__name__)
+                raise TypeError(f"Expected response to be str, got {type(response).__name__}")
 
 
 if __name__ == "__main__":

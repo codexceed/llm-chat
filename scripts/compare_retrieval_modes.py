@@ -14,20 +14,20 @@ The script will:
 
 import json
 import logging
+import pathlib
 import sys
 import time
-from pathlib import Path
 from typing import Any
 
-# Add project root to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
+import llama_index.core
 import qdrant_client
 from llama_index import core
-from llama_index.core import Document, VectorStoreIndex
 from llama_index.embeddings import huggingface
 from llama_index.vector_stores import qdrant as qdrant_vector_store
 from qdrant_client.http import models
+
+# Add project root to path for imports
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -46,7 +46,7 @@ def load_sample_documents() -> list[dict[str, Any]]:
         FileNotFoundError: If the sample documents file doesn't exist
         JSONDecodeError: If the JSON file is malformed
     """
-    data_dir = Path(__file__).parent / "data"
+    data_dir = pathlib.Path(__file__).parent / "data"
     documents_file = data_dir / "sample_documents.json"
 
     try:
@@ -70,7 +70,7 @@ def load_test_queries() -> list[dict[str, Any]]:
         FileNotFoundError: If the test queries file doesn't exist
         JSONDecodeError: If the JSON file is malformed
     """
-    data_dir = Path(__file__).parent / "data"
+    data_dir = pathlib.Path(__file__).parent / "data"
     queries_file = data_dir / "test_queries.json"
 
     try:
@@ -92,8 +92,8 @@ class RetrievalComparer:
             model_name="BAAI/bge-small-en-v1.5", device="cpu"
         )
         self.client: qdrant_client.QdrantClient
-        self.dense_index: VectorStoreIndex
-        self.hybrid_index: VectorStoreIndex
+        self.dense_index: llama_index.core.VectorStoreIndex
+        self.hybrid_index: llama_index.core.VectorStoreIndex
 
         # Configure LlamaIndex for larger, complex documents
         core.Settings.embed_model = self.embedding_model
@@ -151,17 +151,19 @@ class RetrievalComparer:
         sample_documents: list[dict[str, Any]] = load_sample_documents()
 
         # Create documents
-        documents: list[Document] = [
-            Document(text=f"{doc['title']}\n\n{doc['content']}", metadata={"title": doc["title"]})
+        documents: list[llama_index.core.Document] = [
+            llama_index.core.Document(text=f"{doc['title']}\n\n{doc['content']}", metadata={"title": doc["title"]})
             for doc in sample_documents
         ]
 
         # Create indexes
         logger.info("Creating dense-only index...")
-        self.dense_index = VectorStoreIndex.from_documents(documents, vector_store=dense_vector_store)
+        self.dense_index = llama_index.core.VectorStoreIndex.from_documents(documents, vector_store=dense_vector_store)
 
         logger.info("Creating hybrid index...")
-        self.hybrid_index = VectorStoreIndex.from_documents(documents, vector_store=hybrid_vector_store)
+        self.hybrid_index = llama_index.core.VectorStoreIndex.from_documents(
+            documents, vector_store=hybrid_vector_store
+        )
 
         logger.info("Both indexes created successfully!")
 

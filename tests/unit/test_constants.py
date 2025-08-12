@@ -1,12 +1,13 @@
-from hypothesis import given, strategies as st
+import hypothesis
+import hypothesis.strategies
 
-from chatbot.constants import EXTENSION_TO_LANGUAGE_MAPPING, FILE_EXTENSION_TYPE_MAPPING, FileTypes, Message
+import chatbot.constants
 
 
 def test_message_structure() -> None:
-    """Test that Message can be created with required fields."""
-    user_message: Message = {"role": "user", "content": "Hello"}
-    assistant_message: Message = {"role": "assistant", "content": "Hi there"}
+    """Test that chatbot.constants.Message can be created with required fields."""
+    user_message: chatbot.constants.Message = {"role": "user", "content": "Hello"}
+    assistant_message: chatbot.constants.Message = {"role": "assistant", "content": "Hi there"}
 
     assert user_message["role"] == "user"
     assert user_message["content"] == "Hello"
@@ -14,42 +15,51 @@ def test_message_structure() -> None:
     assert assistant_message["content"] == "Hi there"
 
 
-@given(content=st.text())
+@hypothesis.given(content=hypothesis.strategies.text())
 def test_message_with_arbitrary_content(content: str) -> None:
-    """Test Message creation with arbitrary content."""
-    message: Message = {"role": "user", "content": content}
+    """Test chatbot.constants.Message creation with arbitrary content.
+
+    Args:
+        content: Arbitrary content string for the message.
+    """
+    message: chatbot.constants.Message = {"role": "user", "content": content}
     assert message["content"] == content
 
 
 def test_file_types_values() -> None:
-    """Test that FileTypes enum has expected values."""
-    assert FileTypes.CODE.value == "code"
-    assert FileTypes.MARKDOWN.value == "markdown"
-    assert FileTypes.HTML.value == "html"
-    assert FileTypes.TEXT.value == "text"
-    assert FileTypes.UNKNOWN.value == "unknown"
+    """Test that chatbot.constants.FileTypes enum has expected values."""
+    assert chatbot.constants.FileTypes.CODE.value == "code"
+    assert chatbot.constants.FileTypes.MARKDOWN.value == "markdown"
+    assert chatbot.constants.FileTypes.HTML.value == "html"
+    assert chatbot.constants.FileTypes.TEXT.value == "text"
+    assert chatbot.constants.FileTypes.UNKNOWN.value == "unknown"
 
 
 def test_file_types_completeness() -> None:
     """Test that all file types are represented in mappings."""
-    # All file types should have entries in FILE_EXTENSION_TYPE_MAPPING
-    file_types_in_mapping = set(FILE_EXTENSION_TYPE_MAPPING.keys())
-    expected_file_types = {FileTypes.CODE, FileTypes.MARKDOWN, FileTypes.HTML, FileTypes.TEXT}
+    # All file types should have entries in chatbot.constants.FILE_EXTENSION_TYPE_MAPPING
+    file_types_in_mapping = set(chatbot.constants.FILE_EXTENSION_TYPE_MAPPING.keys())
+    expected_file_types = {
+        chatbot.constants.FileTypes.CODE,
+        chatbot.constants.FileTypes.MARKDOWN,
+        chatbot.constants.FileTypes.HTML,
+        chatbot.constants.FileTypes.TEXT,
+    }
 
     # UNKNOWN is not expected to have extensions
     assert file_types_in_mapping == expected_file_types
 
 
 def test_file_types_enum_members() -> None:
-    """Test that FileTypes enum has exactly the expected members."""
+    """Test that chatbot.constants.FileTypes enum has exactly the expected members."""
     expected_members = {"CODE", "MARKDOWN", "HTML", "TEXT", "UNKNOWN"}
-    actual_members = {member.name for member in FileTypes}
+    actual_members = {member.name for member in chatbot.constants.FileTypes}
     assert actual_members == expected_members
 
 
 def test_code_extensions() -> None:
     """Test that code file extensions are properly mapped."""
-    code_extensions = FILE_EXTENSION_TYPE_MAPPING[FileTypes.CODE]
+    code_extensions = chatbot.constants.FILE_EXTENSION_TYPE_MAPPING[chatbot.constants.FileTypes.CODE]
 
     # Test some common programming language extensions
     expected_code_extensions = {
@@ -91,19 +101,19 @@ def test_code_extensions() -> None:
 
 def test_markdown_extensions() -> None:
     """Test that markdown file extensions are properly mapped."""
-    markdown_extensions = FILE_EXTENSION_TYPE_MAPPING[FileTypes.MARKDOWN]
+    markdown_extensions = chatbot.constants.FILE_EXTENSION_TYPE_MAPPING[chatbot.constants.FileTypes.MARKDOWN]
     assert markdown_extensions == {".md"}
 
 
 def test_html_extensions() -> None:
     """Test that HTML file extensions are properly mapped."""
-    html_extensions = FILE_EXTENSION_TYPE_MAPPING[FileTypes.HTML]
+    html_extensions = chatbot.constants.FILE_EXTENSION_TYPE_MAPPING[chatbot.constants.FileTypes.HTML]
     assert html_extensions == {".html", ".htm"}
 
 
 def test_text_extensions() -> None:
     """Test that text file extensions are properly mapped."""
-    text_extensions = FILE_EXTENSION_TYPE_MAPPING[FileTypes.TEXT]
+    text_extensions = chatbot.constants.FILE_EXTENSION_TYPE_MAPPING[chatbot.constants.FileTypes.TEXT]
     assert text_extensions == {".txt"}
 
 
@@ -111,7 +121,7 @@ def test_no_extension_overlap() -> None:
     """Test that file extensions don't overlap between types."""
     all_extensions: set[str] = set()
 
-    for extensions in FILE_EXTENSION_TYPE_MAPPING.values():
+    for extensions in chatbot.constants.FILE_EXTENSION_TYPE_MAPPING.values():
         # Check that no extension appears in multiple file types
         overlap = all_extensions.intersection(extensions)
         assert len(overlap) == 0, f"Extension overlap found: {overlap}"
@@ -120,7 +130,7 @@ def test_no_extension_overlap() -> None:
 
 def test_extensions_format() -> None:
     """Test that all extensions follow the expected format."""
-    for extensions in FILE_EXTENSION_TYPE_MAPPING.values():
+    for extensions in chatbot.constants.FILE_EXTENSION_TYPE_MAPPING.values():
         for ext in extensions:
             # All extensions should start with a dot
             assert ext.startswith("."), f"Extension {ext} should start with '.'"
@@ -163,13 +173,13 @@ def test_common_language_mappings() -> None:
     }
 
     for ext, expected_lang in expected_mappings.items():
-        assert EXTENSION_TO_LANGUAGE_MAPPING[ext] == expected_lang
+        assert chatbot.constants.EXTENSION_TO_LANGUAGE_MAPPING[ext] == expected_lang
 
 
 def test_all_extensions_in_code_type() -> None:
     """Test that all extensions in language mapping are also in code file type."""
-    code_extensions = FILE_EXTENSION_TYPE_MAPPING[FileTypes.CODE]
-    language_mapping_extensions = set(EXTENSION_TO_LANGUAGE_MAPPING.keys())
+    code_extensions = chatbot.constants.FILE_EXTENSION_TYPE_MAPPING[chatbot.constants.FileTypes.CODE]
+    language_mapping_extensions = set(chatbot.constants.EXTENSION_TO_LANGUAGE_MAPPING.keys())
 
     # All extensions in language mapping should be in code extensions
     assert language_mapping_extensions.issubset(code_extensions), (
@@ -179,7 +189,7 @@ def test_all_extensions_in_code_type() -> None:
 
 def test_extension_format_consistency() -> None:
     """Test that extensions in language mapping follow the same format as file type mapping."""
-    for ext in EXTENSION_TO_LANGUAGE_MAPPING:
+    for ext in chatbot.constants.EXTENSION_TO_LANGUAGE_MAPPING:
         # All extensions should start with a dot
         assert ext.startswith("."), f"Extension {ext} should start with '.'"
 
@@ -192,7 +202,7 @@ def test_extension_format_consistency() -> None:
 
 def test_language_names_format() -> None:
     """Test that language names follow expected format."""
-    for ext, language in EXTENSION_TO_LANGUAGE_MAPPING.items():
+    for ext, language in chatbot.constants.EXTENSION_TO_LANGUAGE_MAPPING.items():
         # Language names should be strings
         assert isinstance(language, str), f"Language for {ext} should be string, got {type(language)}"
 
@@ -203,12 +213,16 @@ def test_language_names_format() -> None:
         assert language.islower() or "_" in language, f"Language name '{language}' should be lowercase or snake_case"
 
 
-@given(random_ext=st.text())
+@hypothesis.given(random_ext=hypothesis.strategies.text())
 def test_get_language_for_unknown_extension(random_ext: str) -> None:
-    """Test behavior when looking up unknown extensions."""
+    """Test behavior when looking up unknown extensions.
+
+    Args:
+        random_ext: Random file extension to test.
+    """
     # Only test extensions that start with '.' and aren't in the mapping
-    if random_ext.startswith(".") and random_ext not in EXTENSION_TO_LANGUAGE_MAPPING:
-        result = EXTENSION_TO_LANGUAGE_MAPPING.get(random_ext, "unknown")
+    if random_ext.startswith(".") and random_ext not in chatbot.constants.EXTENSION_TO_LANGUAGE_MAPPING:
+        result = chatbot.constants.EXTENSION_TO_LANGUAGE_MAPPING.get(random_ext, "unknown")
         assert result == "unknown"
 
 
@@ -217,16 +231,16 @@ def test_javascript_typescript_consistency() -> None:
     # JavaScript extensions
     js_extensions = [".js", ".jsx"]
     for ext in js_extensions:
-        assert EXTENSION_TO_LANGUAGE_MAPPING[ext] == "javascript"
+        assert chatbot.constants.EXTENSION_TO_LANGUAGE_MAPPING[ext] == "javascript"
 
     # TypeScript extensions
     ts_extensions = [".ts", ".tsx"]
     for ext in ts_extensions:
-        assert EXTENSION_TO_LANGUAGE_MAPPING[ext] == "typescript"
+        assert chatbot.constants.EXTENSION_TO_LANGUAGE_MAPPING[ext] == "typescript"
 
 
 def test_shell_script_consistency() -> None:
     """Test that shell script extensions map to bash."""
     shell_extensions = [".sh", ".bash", ".zsh"]
     for ext in shell_extensions:
-        assert EXTENSION_TO_LANGUAGE_MAPPING[ext] == "bash"
+        assert chatbot.constants.EXTENSION_TO_LANGUAGE_MAPPING[ext] == "bash"

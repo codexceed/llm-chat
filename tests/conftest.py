@@ -2,27 +2,42 @@
 
 import copy
 import os
+import pathlib
 import tempfile
+import unittest.mock
 from collections.abc import Generator
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
+import hypothesis
 import pytest
-from hypothesis import settings as hypothesis_settings
-from streamlit.runtime.uploaded_file_manager import UploadedFile
+import streamlit.runtime.uploaded_file_manager
 
-from chatbot import settings
-from chatbot.settings import QdrantSettings, RAGSettings, Settings
+from chatbot import rag, settings
 
 # Configure Hypothesis settings for faster test runs
-hypothesis_settings.register_profile("default", max_examples=50, deadline=5000)
-hypothesis_settings.load_profile("default")
+hypothesis.settings.register_profile("default", max_examples=50, deadline=5000)
+hypothesis.settings.load_profile("default")
 
 
-class MockUploadedFile(UploadedFile):
-    """Mock UploadedFile for testing file upload functionality."""
+class MockUploadedFile(streamlit.runtime.uploaded_file_manager.UploadedFile):
+    """Mock streamlit.runtime.uploaded_file_manager.UploadedFile for testing file upload functionality.
+
+    Args:
+        name: Name of the file.
+        content: File content as bytes.
+        file_id: Unique identifier for the file.
+        mimetype: MIME type of the file.
+    """
 
     def __init__(self, name: str, content: bytes, file_id: str = "test_file", mimetype: str = "text/plain"):
+        """Initialize the mock uploaded file.
+
+        Args:
+            name: Name of the file.
+            content: File content as bytes.
+            file_id: Unique identifier for the file.
+            mimetype: MIME type of the file.
+        """
+        # Don't call super().__init__() since we're mocking the behavior
         self.name = name
         self._content = content
         self.file_id = file_id
@@ -30,11 +45,18 @@ class MockUploadedFile(UploadedFile):
         self.type = mimetype
 
     def getvalue(self) -> bytes:
-        """Return the file content as bytes."""
+        """Return the file content as bytes.
+
+        Returns:
+            The file content as bytes.
+        """
         return self._content
 
     def read(self, size: int | None = -1) -> bytes:
         """Read file content.
+
+        Args:
+            size: Number of bytes to read, or -1 for all content.
 
         Returns:
             The content up to `size` bytes, or the entire content if `size` is not specified.
@@ -43,8 +65,12 @@ class MockUploadedFile(UploadedFile):
             return self._content
         return self._content[:size]
 
-    def seek(self, offset: int, whence: int = 0) -> int:
+    def seek(self, _offset: int, _whence: int = 0) -> int:
         """Seek to position (no-op for mock).
+
+        Args:
+            _offset: Seek offset (ignored in mock).
+            _whence: Seek reference point (ignored in mock).
 
         Returns:
             The new position.
@@ -52,24 +78,31 @@ class MockUploadedFile(UploadedFile):
         return 0
 
     def tell(self) -> int:
-        """Return current position (always 0 for mock)."""
+        """Return current position (always 0 for mock).
+
+        Returns:
+            The current position (always 0 for mock).
+        """
         return 0
 
 
 @pytest.fixture
-def temp_directory() -> Generator[Path, None, None]:
+def temp_directory() -> Generator[pathlib.Path]:
     """Create a temporary directory for test files.
 
     Yields:
         The path to the temporary directory.
     """
     with tempfile.TemporaryDirectory() as temp_dir:
-        yield Path(temp_dir)
+        yield pathlib.Path(temp_dir)
 
 
 @pytest.fixture
-def sample_files(temp_directory: Path) -> dict[str, Path]:
+def sample_files(temp_directory: pathlib.Path) -> dict[str, pathlib.Path]:
     """Create sample files for testing.
+
+    Args:
+        temp_directory: The temporary directory to create files in.
 
     Returns:
         A dictionary mapping file types to their paths.
@@ -123,7 +156,7 @@ This is a test project for the chatbot application.
 ```python
 from chatbot import RAG
 
-rag = RAG()
+rag = chatbot.rag.RAG()
 context = rag.retrieve("How to use this?")
 ```
 """
@@ -243,8 +276,11 @@ const app = new ChatApp();
 
 
 @pytest.fixture
-def mock_uploaded_files(sample_files: dict[str, Path]) -> list[MockUploadedFile]:
+def mock_uploaded_files(sample_files: dict[str, pathlib.Path]) -> list[MockUploadedFile]:
     """Create mock uploaded files from sample files.
+
+    Args:
+        sample_files: Dictionary mapping file types to their paths.
 
     Returns:
         A list of mock uploaded files.
@@ -263,6 +299,9 @@ def mock_uploaded_files(sample_files: dict[str, Path]) -> list[MockUploadedFile]
 
 def _get_mimetype(suffix: str) -> str:
     """Get MIME type for file extension.
+
+    Args:
+        suffix: File extension including the dot.
 
     Returns:
         The MIME type for the given file extension.
@@ -285,13 +324,13 @@ def _get_mimetype(suffix: str) -> str:
 
 
 @pytest.fixture
-def test_settings() -> Settings:
+def test_settings() -> settings.Settings:
     """Create test settings with safe defaults.
 
     Returns:
-        A Settings object with test-safe values.
+        A chatbot.settings.Settings object with test-safe values.
     """
-    return Settings(
+    return settings.Settings(
         openai_api_base="http://localhost:8000/v1",
         openai_api_key="test-key",
         llm_model_name="test-model",
@@ -302,10 +341,10 @@ def test_settings() -> Settings:
         host="127.0.0.1",
         port=8080,
         debug=True,
-        qdrant=QdrantSettings(
+        qdrant=settings.QdrantSettings(
             url="http://localhost:6333", api_key=None, collection_name="test_collection", vector_size=384
         ),
-        rag=RAGSettings(
+        rag=settings.RAGSettings(
             enabled=True,
             embedding_model="test-embedding-model",
             chunk_size=512,
@@ -328,20 +367,20 @@ def test_settings() -> Settings:
 
 
 @pytest.fixture
-def mock_openai_client() -> MagicMock:
+def mock_openai_client() -> unittest.mock.MagicMock:
     """Create a mock OpenAI client for testing.
 
     Returns:
         A mock OpenAI client.
     """
-    mock_client = MagicMock()
+    mock_client = unittest.mock.MagicMock()
 
     # Mock streaming response
-    mock_stream = MagicMock()
+    mock_stream = unittest.mock.MagicMock()
     mock_chunks = [
-        MagicMock(choices=[MagicMock(delta=MagicMock(content="Test"))]),
-        MagicMock(choices=[MagicMock(delta=MagicMock(content=" response"))]),
-        MagicMock(choices=[MagicMock(delta=MagicMock(content=None))]),
+        unittest.mock.MagicMock(choices=[unittest.mock.MagicMock(delta=unittest.mock.MagicMock(content="Test"))]),
+        unittest.mock.MagicMock(choices=[unittest.mock.MagicMock(delta=unittest.mock.MagicMock(content=" response"))]),
+        unittest.mock.MagicMock(choices=[unittest.mock.MagicMock(delta=unittest.mock.MagicMock(content=None))]),
     ]
     mock_stream.__iter__.return_value = iter(mock_chunks)
     mock_client.chat.completions.create.return_value = mock_stream
@@ -350,13 +389,13 @@ def mock_openai_client() -> MagicMock:
 
 
 @pytest.fixture
-def mock_qdrant_client() -> MagicMock:
+def mock_qdrant_client() -> unittest.mock.MagicMock:
     """Create a mock Qdrant client for testing.
 
     Returns:
         A mock Qdrant client.
     """
-    mock_client = MagicMock()
+    mock_client = unittest.mock.MagicMock()
 
     # Mock collection operations
     mock_client.get_collection.side_effect = Exception("Collection not found")
@@ -368,13 +407,13 @@ def mock_qdrant_client() -> MagicMock:
 
 
 @pytest.fixture
-def mock_embedding_model() -> MagicMock:
+def mock_embedding_model() -> unittest.mock.MagicMock:
     """Create a mock embedding model for testing.
 
     Returns:
         A mock embedding model.
     """
-    mock_model = MagicMock()
+    mock_model = unittest.mock.MagicMock()
 
     # Mock embedding generation
     mock_model.get_text_embedding.return_value = [0.1, 0.2, 0.3, 0.4]
@@ -388,13 +427,13 @@ def mock_embedding_model() -> MagicMock:
 
 
 @pytest.fixture
-def mock_vector_store() -> MagicMock:
+def mock_vector_store() -> unittest.mock.MagicMock:
     """Create a mock vector store for testing.
 
     Returns:
         A mock vector store.
     """
-    mock_store = MagicMock()
+    mock_store = unittest.mock.MagicMock()
 
     # Mock vector operations
     mock_store.add.return_value = None
@@ -405,16 +444,16 @@ def mock_vector_store() -> MagicMock:
 
 
 @pytest.fixture
-def mock_vector_index() -> MagicMock:
+def mock_vector_index() -> unittest.mock.MagicMock:
     """Create a mock vector index for testing.
 
     Returns:
         A mock vector index.
     """
-    mock_index = MagicMock()
+    mock_index = unittest.mock.MagicMock()
 
     # Mock retriever
-    mock_retriever = MagicMock()
+    mock_retriever = unittest.mock.MagicMock()
     mock_retriever.retrieve.return_value = []
     mock_index.as_retriever.return_value = mock_retriever
 
@@ -426,16 +465,16 @@ def mock_vector_index() -> MagicMock:
 
 
 @pytest.fixture
-def mock_httpx_client() -> MagicMock:
+def mock_httpx_client() -> unittest.mock.MagicMock:
     """Create a mock httpx async client for testing.
 
     Returns:
         A mock httpx async client.
     """
-    mock_client = MagicMock()
+    mock_client = unittest.mock.MagicMock()
 
     # Mock successful response
-    mock_response = MagicMock()
+    mock_response = unittest.mock.MagicMock()
     mock_response.text = "Mock web content"
     mock_response.status_code = 200
     mock_response.raise_for_status.return_value = None
@@ -445,8 +484,12 @@ def mock_httpx_client() -> MagicMock:
 
 
 @pytest.fixture(autouse=True)
-def isolate_environment() -> Generator[None, None, None]:
-    """Isolate environment variables for each test."""
+def isolate_environment() -> Generator[None]:
+    """Isolate environment variables for each test.
+
+    Yields:
+        Nothing, but ensures environment isolation.
+    """
     original_env = os.environ.copy()
 
     # Clear chatbot-related environment variables
@@ -460,31 +503,6 @@ def isolate_environment() -> Generator[None, None, None]:
         # Restore original environment
         os.environ.clear()
         os.environ.update(original_env)
-
-
-@pytest.fixture
-def patch_llama_index() -> Generator[dict[str, MagicMock], None, None]:
-    """Patch LlamaIndex components for testing.
-
-    Yields:
-        A dictionary of patched LlamaIndex components.
-    """
-    patches = {}
-
-    with (
-        patch("llama_index.core.SimpleDirectoryReader") as mock_reader,
-        patch("llama_index.core.VectorStoreIndex.from_vector_store") as mock_index,
-        patch("llama_index.embeddings.huggingface.HuggingFaceEmbedding") as mock_embedding,
-        patch("llama_index.vector_stores.qdrant.QdrantVectorStore") as mock_store,
-        patch("llama_index.core.Settings") as mock_settings,
-    ):
-        patches["reader"] = mock_reader
-        patches["index"] = mock_index
-        patches["embedding"] = mock_embedding
-        patches["store"] = mock_store
-        patches["settings"] = mock_settings
-
-        yield patches
 
 
 @pytest.fixture
@@ -576,7 +594,7 @@ def sample_web_content() -> dict[str, str]:
 
 
 @pytest.fixture(scope="function")
-def chatbot_settings() -> Generator[settings.Settings, None, None]:
+def chatbot_settings() -> Generator[settings.Settings]:
     """Fixture to temporarily modify and restore chatbot settings during tests.
 
     Yields:
@@ -585,3 +603,82 @@ def chatbot_settings() -> Generator[settings.Settings, None, None]:
     original_settings = copy.deepcopy(settings.CHATBOT_SETTINGS)
     yield settings.CHATBOT_SETTINGS
     settings.CHATBOT_SETTINGS = original_settings
+
+
+def _is_qdrant_running() -> bool:
+    """Check if Qdrant service is already running.
+
+    Returns:
+        True if Qdrant service is running and accessible, False otherwise.
+    """
+    import httpx
+
+    from chatbot.settings import CHATBOT_SETTINGS
+
+    try:
+        response = httpx.get(f"{CHATBOT_SETTINGS.qdrant.url}/collections", timeout=2.0)
+        return response.status_code == 200
+    except (httpx.RequestError, httpx.TimeoutException):
+        return False
+
+
+@pytest.fixture(scope="module")
+def qdrant_service() -> Generator[None]:
+    """Fixture to start and stop the Qdrant Docker container."""
+    import subprocess
+    import time
+
+    # Check if Qdrant is already running
+    was_running = _is_qdrant_running()
+
+    if not was_running:
+        # Start Qdrant service
+        subprocess.run(  # nosec B607
+            ["docker-compose", "up", "-d", "qdrant"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        # Wait for the service to be healthy
+        time.sleep(5)
+
+    try:
+        yield
+    finally:
+        # Only stop the service if we started it
+        if not was_running:
+            subprocess.run(  # nosec B607
+                ["docker-compose", "down"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+
+@pytest.fixture
+def rag_instance(qdrant_service: None) -> Generator[rag.RAG]:
+    """Fixture to provide a RAG instance for testing.
+
+    Args:
+        qdrant_service: Fixture to set up the Qdrant service.
+
+    Yields:
+        An instance of the RAG class.
+    """
+    import contextlib
+
+    import qdrant_client
+
+    import chatbot.rag
+    from chatbot.settings import CHATBOT_SETTINGS
+
+    client = qdrant_client.QdrantClient(url=CHATBOT_SETTINGS.qdrant.url, api_key=CHATBOT_SETTINGS.qdrant.api_key)
+    collection_name = CHATBOT_SETTINGS.qdrant.collection_name
+    CHATBOT_SETTINGS.qdrant.collection_name = "test"
+    with contextlib.suppress(Exception):
+        client.delete_collection(CHATBOT_SETTINGS.qdrant.collection_name)
+
+    rag = chatbot.rag.RAG()
+    yield rag
+
+    CHATBOT_SETTINGS.qdrant.collection_name = collection_name

@@ -79,7 +79,7 @@ async def _fetch_url(url: str, client: httpx.AsyncClient) -> str:
     except httpx.HTTPStatusError as e:
         LOGGER.warning("HTTP error for %s: %s", url, e)
         return ""
-    except Exception as e:
+    except (httpx.RequestError, ValueError, UnicodeDecodeError) as e:
         LOGGER.warning("Unexpected error fetching %s: %s", url, e)
         return ""
 

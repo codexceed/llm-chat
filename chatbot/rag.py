@@ -1,8 +1,8 @@
 """RAG (Retrieval-Augmented Generation) functionality using LlamaIndex and Qdrant."""
 
+import pathlib
 import tempfile
 from collections.abc import Sequence
-from pathlib import Path
 from typing import Any, TypeAlias
 
 import httpx
@@ -16,8 +16,7 @@ from qdrant_client.http import exceptions as qdrant_exceptions, models
 from streamlit import logger
 from streamlit.runtime import uploaded_file_manager
 
-from chatbot import constants
-from chatbot.settings import CHATBOT_SETTINGS
+from chatbot import constants, settings
 from chatbot.utils import web
 
 LOGGER = logger.get_logger(__name__)
@@ -32,40 +31,40 @@ class RAG:
         """Initialize the RAG processor with Qdrant vector store and hybrid search."""
         LOGGER.info("Initializing RAG processor with Qdrant hybrid vector store.")
         self.client = qdrant_client.QdrantClient(
-            url=CHATBOT_SETTINGS.qdrant.url, api_key=CHATBOT_SETTINGS.qdrant.api_key
+            url=settings.CHATBOT_SETTINGS.qdrant.url, api_key=settings.CHATBOT_SETTINGS.qdrant.api_key
         )
         self.embedding_model = huggingface.HuggingFaceEmbedding(
-            model_name=CHATBOT_SETTINGS.rag.embedding_model, device=CHATBOT_SETTINGS.rag.device
+            model_name=settings.CHATBOT_SETTINGS.rag.embedding_model, device=settings.CHATBOT_SETTINGS.rag.device
         )
 
         # Configure LlamaIndex settings
         core.Settings.embed_model = self.embedding_model
-        core.Settings.chunk_size = CHATBOT_SETTINGS.rag.chunk_size
-        core.Settings.chunk_overlap = CHATBOT_SETTINGS.rag.chunk_overlap
+        core.Settings.chunk_size = settings.CHATBOT_SETTINGS.rag.chunk_size
+        core.Settings.chunk_overlap = settings.CHATBOT_SETTINGS.rag.chunk_overlap
 
         self._ensure_collection_exists()
 
         # Initialize vector store with hybrid search capability
-        if CHATBOT_SETTINGS.rag.use_hybrid_retrieval:
-            LOGGER.info(f"Enabling hybrid search with sparse model: {CHATBOT_SETTINGS.rag.sparse_model}")
+        if settings.CHATBOT_SETTINGS.rag.use_hybrid_retrieval:
+            LOGGER.info("Enabling hybrid search with sparse model: %s", settings.CHATBOT_SETTINGS.rag.sparse_model)
             self.vector_store = qdrant.QdrantVectorStore(
                 client=self.client,
-                collection_name=CHATBOT_SETTINGS.qdrant.collection_name,
-                fastembed_sparse_model=CHATBOT_SETTINGS.rag.sparse_model,
+                collection_name=settings.CHATBOT_SETTINGS.qdrant.collection_name,
+                fastembed_sparse_model=settings.CHATBOT_SETTINGS.rag.sparse_model,
             )
         else:
             self.vector_store = qdrant.QdrantVectorStore(
                 client=self.client,
-                collection_name=CHATBOT_SETTINGS.qdrant.collection_name,
+                collection_name=settings.CHATBOT_SETTINGS.qdrant.collection_name,
             )
-        self.index = core.VectorStoreIndex.from_vector_store(
+        self.index = core.VectorStoreIndex.from_vector_store(  # pyright: ignore[reportUnknownMemberType]
             vector_store=self.vector_store, embed_model=self.embedding_model
         )  # type: ignore
 
         # Configure retriever with hybrid search parameters
-        retriever_kwargs: dict[str, Any] = {"similarity_top_k": CHATBOT_SETTINGS.rag.hybrid_top_k}
-        if CHATBOT_SETTINGS.rag.use_hybrid_retrieval:
-            retriever_kwargs["sparse_top_k"] = CHATBOT_SETTINGS.rag.hybrid_top_k
+        retriever_kwargs: dict[str, Any] = {"similarity_top_k": settings.CHATBOT_SETTINGS.rag.hybrid_top_k}
+        if settings.CHATBOT_SETTINGS.rag.use_hybrid_retrieval:
+            retriever_kwargs["sparse_top_k"] = settings.CHATBOT_SETTINGS.rag.hybrid_top_k
 
         # Add similarity postprocessor to filter low-relevance nodes
         retriever_kwargs["node_postprocessors"] = [postprocessor.SimilarityPostprocessor(similarity_cutoff=0.8)]
@@ -78,16 +77,16 @@ class RAG:
     def _ensure_collection_exists(self) -> None:
         """Ensure the Qdrant collection exists."""
         try:
-            self.client.get_collection(CHATBOT_SETTINGS.qdrant.collection_name)
+            self.client.get_collection(settings.CHATBOT_SETTINGS.qdrant.collection_name)
         except qdrant_exceptions.UnexpectedResponse:
             LOGGER.info(
                 "Creating new Qdrant collection by name: %s",
-                CHATBOT_SETTINGS.qdrant.collection_name,
+                settings.CHATBOT_SETTINGS.qdrant.collection_name,
             )
             self.client.create_collection(
-                collection_name=CHATBOT_SETTINGS.qdrant.collection_name,
+                collection_name=settings.CHATBOT_SETTINGS.qdrant.collection_name,
                 vectors_config=models.VectorParams(
-                    size=CHATBOT_SETTINGS.qdrant.vector_size,
+                    size=settings.CHATBOT_SETTINGS.qdrant.vector_size,
                     distance=models.Distance.COSINE,
                 ),
             )
@@ -95,21 +94,21 @@ class RAG:
     def _init_parsers(self) -> None:
         """Initialize cached parsers and pipelines for adaptive parsing."""
         self._sentence_parser = node_parser.SentenceSplitter(
-            chunk_size=CHATBOT_SETTINGS.rag.chunk_size,
-            chunk_overlap=CHATBOT_SETTINGS.rag.chunk_overlap,
+            chunk_size=settings.CHATBOT_SETTINGS.rag.chunk_size,
+            chunk_overlap=settings.CHATBOT_SETTINGS.rag.chunk_overlap,
         )
         self._sentence_pipeline = ingestion.IngestionPipeline(
             transformations=[self._sentence_parser, self.embedding_model]
         )
 
-        if CHATBOT_SETTINGS.rag.use_adaptive_parsing:
+        if settings.CHATBOT_SETTINGS.rag.use_adaptive_parsing:
             self._markdown_parser = node_parser.MarkdownNodeParser()
             self._html_parser = node_parser.HTMLNodeParser()
 
             self._semantic_parser = node_parser.SemanticSplitterNodeParser(
                 embed_model=self.embedding_model,
                 buffer_size=1,
-                breakpoint_percentile_threshold=CHATBOT_SETTINGS.rag.semantic_breakpoint_threshold,
+                breakpoint_percentile_threshold=settings.CHATBOT_SETTINGS.rag.semantic_breakpoint_threshold,
             )
 
             # Initialize pipelines (excluding code pipeline - created dynamically)
@@ -132,7 +131,7 @@ class RAG:
 
         # Read documents from uploaded files.
         with tempfile.TemporaryDirectory() as temp_dir:
-            temp_path = Path(temp_dir)
+            temp_path = pathlib.Path(temp_dir)
 
             for uploaded_file in uploaded_files:
                 file_path = temp_path / uploaded_file.name
@@ -143,7 +142,7 @@ class RAG:
 
         # Parse documents into chunks using adaptive parsing
         nodes: Sequence[schema.BaseNode]
-        if CHATBOT_SETTINGS.rag.use_adaptive_parsing:
+        if settings.CHATBOT_SETTINGS.rag.use_adaptive_parsing:
             nodes = self._process_documents_adaptively(documents)
         else:
             nodes = self._sentence_pipeline.run(documents=documents)
@@ -175,7 +174,7 @@ class RAG:
             return
 
         # Process web documents using HTML pipeline for consistent parsing
-        if CHATBOT_SETTINGS.rag.use_adaptive_parsing and hasattr(self, "_html_pipeline"):
+        if settings.CHATBOT_SETTINGS.rag.use_adaptive_parsing and hasattr(self, "_html_pipeline"):
             nodes = self._html_pipeline.run(documents=documents)
         else:
             # Fallback to sentence-based parsing if adaptive parsing is disabled
@@ -198,24 +197,27 @@ class RAG:
             nodes = self.retriever.retrieve(query_text)
 
             # Apply relevance filtering if enabled using node scores
-            if CHATBOT_SETTINGS.rag.enable_relevance_filtering:
+            if settings.CHATBOT_SETTINGS.rag.enable_relevance_filtering:
                 filtered_nodes = [
                     node
                     for node in nodes
-                    if node.score is not None and node.score >= CHATBOT_SETTINGS.rag.relevance_threshold
+                    if node.score is not None and node.score >= settings.CHATBOT_SETTINGS.rag.relevance_threshold
                 ]
                 LOGGER.info(
-                    f"Filtered {len(nodes)} -> {len(filtered_nodes)} nodes by relevance (threshold: {CHATBOT_SETTINGS.rag.relevance_threshold})"
+                    "Filtered %d -> %d nodes by relevance (threshold: %s)",
+                    len(nodes),
+                    len(filtered_nodes),
+                    settings.CHATBOT_SETTINGS.rag.relevance_threshold,
                 )
                 chunks = [node.text for node in filtered_nodes]
             else:
                 chunks = [node.text for node in nodes]
 
             # Apply deduplication and return top_k results
-            return self._deduplicate_chunks(chunks)[: CHATBOT_SETTINGS.rag.top_k]
+            return self._deduplicate_chunks(chunks)[: settings.CHATBOT_SETTINGS.rag.top_k]
 
-        except Exception as e:
-            LOGGER.error(f"Error during retrieval: {e}")
+        except (qdrant_exceptions.UnexpectedResponse, ValueError, RuntimeError) as e:
+            LOGGER.error("Error during retrieval: %s", e)
             return []
 
     def _deduplicate_chunks(self, chunks: list[str]) -> list[str]:
@@ -252,7 +254,7 @@ class RAG:
             similarities = self._vectorized_cosine_similarity(current_embedding, existing_embeddings)
 
             # Check if any similarity exceeds threshold
-            if np.all(similarities < CHATBOT_SETTINGS.rag.deduplication_similarity_threshold):
+            if np.all(similarities < settings.CHATBOT_SETTINGS.rag.deduplication_similarity_threshold):
                 deduplicated_chunks.append(chunk)
                 deduplicated_indices.append(i)
 
@@ -288,12 +290,12 @@ class RAG:
         """Determine file type for parser selection.
 
         Args:
-            file_path: Path to the file.
+            file_path: pathlib.Path to the file.
 
         Returns:
             File type category for parser selection.
         """
-        suffix = Path(file_path).suffix.lower()
+        suffix = pathlib.Path(file_path).suffix.lower()
 
         for file_type, extensions in constants.FILE_EXTENSION_TYPE_MAPPING.items():
             if suffix in extensions:
@@ -380,24 +382,27 @@ class RAG:
                 if language == "unknown":
                     # Fallback to semantic splitter for unknown code languages
                     LOGGER.warning(
-                        f"Unknown code language, falling back to semantic splitter for {len(docs)} documents"
+                        "Unknown code language, falling back to semantic splitter for %d documents",
+                        len(docs),
                     )
                     nodes = self._semantic_pipeline.run(documents=docs)
                 else:
                     # Create language-specific code parser
                     code_parser = node_parser.CodeSplitter(
                         language=language,
-                        chunk_lines=CHATBOT_SETTINGS.rag.code_chunk_lines,
-                        chunk_lines_overlap=CHATBOT_SETTINGS.rag.code_chunk_overlap_lines,
-                        max_chars=CHATBOT_SETTINGS.rag.chunk_size,
+                        chunk_lines=settings.CHATBOT_SETTINGS.rag.code_chunk_lines,
+                        chunk_lines_overlap=settings.CHATBOT_SETTINGS.rag.code_chunk_overlap_lines,
+                        max_chars=settings.CHATBOT_SETTINGS.rag.chunk_size,
                     )
                     code_pipeline = ingestion.IngestionPipeline(transformations=[code_parser, self.embedding_model])
                     nodes = code_pipeline.run(documents=docs)
 
                 all_nodes.extend(nodes)
 
-            except Exception as e:  # noqa: PERF203
-                LOGGER.error(f"CodeSplitter failed for language '{language}': {e}. Falling back to semantic splitter.")
+            except (ValueError, ImportError, RuntimeError) as e:  # noqa: PERF203
+                LOGGER.error(
+                    "CodeSplitter failed for language '%s': %s. Falling back to semantic splitter.", language, e
+                )
                 # Fallback to semantic splitter on any error
                 fallback_nodes = self._semantic_pipeline.run(documents=docs)
                 all_nodes.extend(fallback_nodes)
@@ -408,7 +413,7 @@ class RAG:
         """Detect programming language from file path.
 
         Args:
-            file_path: Path to the code file.
+            file_path: pathlib.Path to the code file.
 
         Returns:
             Language identifier for CodeSplitter, or "unknown" if not detected.
@@ -416,5 +421,5 @@ class RAG:
         if not file_path:
             return "unknown"
 
-        suffix = Path(file_path).suffix.lower()
+        suffix = pathlib.Path(file_path).suffix.lower()
         return constants.EXTENSION_TO_LANGUAGE_MAPPING.get(suffix, "unknown")

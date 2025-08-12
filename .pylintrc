@@ -1,0 +1,90 @@
+[BASIC]
+no-docstring-rgx = ^((?!__init__)_|Test)  # Test Classes and init methods can remain without docstrings
+
+[CLASSES]
+exclude-protected =
+    _log_dir,
+    _save_dir,
+    dev,
+
+[DESIGN]
+exclude-too-few-public-methods = ^Test
+max-args = 12
+max-attributes = 13
+max-branches = 15
+max-locals = 20
+max-module-lines = 1400
+
+
+[FORMAT]
+max-line-length = 140
+
+[IMPORTS]
+allow-reexport-from-package = true
+
+[MAIN]
+allowed-redefined-builtins =
+    input
+fail-on =
+    bad-inline-option,
+    cyclic-import,
+    deprecated-pragma,
+    differing-param-doc,
+    differing-type-doc,
+    import-error,
+    missing-class-docstring,
+    missing-function-docstring,
+    missing-param-doc,
+    missing-raises-doc,
+    missing-return-doc,
+    missing-return-type-doc,
+    missing-type-doc,
+    missing-yield-doc,
+    missing-yield-type-doc,
+    unused-import,
+    use-symbolic-message-instead,
+    useless-suppression
+
+fail-under = 9
+
+load-plugins =
+    pylint.extensions.code_style,
+    pylint.extensions.docparams,
+    pylint.extensions.docstyle,
+    pylint.extensions.typing,
+    pylint_google_style_guide_imports_enforcing
+
+[MESSAGES CONTROL]
+disable =
+    abstract-method,
+    consider-using-assignment-expr,
+    file-ignored,
+    fixme,
+    line-too-long,
+    locally-disabled,
+    missing-module-docstring,
+    raw-checker-failed,
+    suppressed-message,
+    too-few-public-methods,
+    too-many-ancestors,
+    too-many-arguments,
+    typecheck,
+    unpacking-non-sequence
+enable =
+    bad-inline-option,
+    deprecated-pragma,
+    use-symbolic-message-instead,
+    useless-suppression
+
+[PARAMETER_DOCUMENTATION]
+accept-no-param-doc = false
+accept-no-raise-doc = false
+accept-no-return-doc = false
+accept-no-yields-doc = false
+default-docstring-type = google
+
+[REPORTS]
+output-format = colorized
+
+[VARIABLES]
+ignored-argument-names = ^(_|ignored_|unused_|mocks|mock_)

@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
-"""Evaluation script for testing the reliability of lookup_http_urls_in_prompt function.
+"""Evaluation script for testing the reliability of chatbot.utils.web.lookup_http_urls_in_prompt function.
 
 This script tests the URL fetching functionality with a diverse set of URLs
 to measure success rates, response times, and error patterns.
 """
 
 import asyncio
+import collections
+import dataclasses
 import json
+import pathlib
 import time
-from collections import defaultdict
-from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import httpx
 
-from chatbot.utils.web import lookup_http_urls_in_prompt
+import chatbot.utils.web
 
 # ruff: noqa: T201
 
 
-@dataclass
+@dataclasses.dataclass
 class EvaluationResult:
     """Results from evaluating URL lookup reliability."""
 
@@ -38,7 +38,7 @@ def load_test_urls(config_file: str = "test_urls.json", test_set: str = "default
     """Load test URLs from JSON configuration file.
 
     Args:
-        config_file: Path to the JSON configuration file
+        config_file: pathlib.Path to the JSON configuration file
         test_set: Name of the test set to load
 
     Returns:
@@ -47,7 +47,7 @@ def load_test_urls(config_file: str = "test_urls.json", test_set: str = "default
     Raises:
         ValueError: If the specified test set is not found in the configuration
     """
-    config_path = Path(__file__).parent / config_file
+    config_path = pathlib.Path(__file__).parent / config_file
 
     with open(config_path) as f:
         config = json.load(f)
@@ -103,7 +103,7 @@ class WebLookupEvaluator:
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                _urls, contents = await lookup_http_urls_in_prompt(prompt, client)
+                _urls, contents = await chatbot.utils.web.lookup_http_urls_in_prompt(prompt, client)
 
                 success = len(contents) > 0
                 content_length = sum(len(content) for content in contents)
@@ -151,7 +151,7 @@ class WebLookupEvaluator:
         # Process results
         url_results: list[dict[str, Any]] = []
         url_result: dict[str, Any]
-        error_types: dict[str, int] = defaultdict(int)
+        error_types: dict[str, int] = collections.defaultdict(int)
         successful_fetches = 0
         failed_fetches = 0
 

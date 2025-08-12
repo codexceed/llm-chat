@@ -1,84 +1,84 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+import unittest.mock
 
+import hypothesis
+import hypothesis.strategies
 import numpy as np
 import pytest
-from hypothesis import HealthCheck, given, settings, strategies as st
 
-from chatbot.constants import FileTypes
-from chatbot.rag import RAG
+from chatbot import constants
 
 
 @pytest.fixture
-def rag_instance() -> MagicMock:
-    """Fixture for a mock RAG instance.
+def rag_instance() -> unittest.mock.MagicMock:
+    """Fixture for a mock rag.RAG instance.
 
     Returns:
-        A mock RAG instance.
+        A mock rag.RAG instance.
     """
-    rag = MagicMock()
-    rag._get_file_type = RAG._get_file_type.__get__(rag, RAG)
-    rag._detect_code_language = RAG._detect_code_language.__get__(rag, RAG)
-    rag._cosine_similarity = RAG._vectorized_cosine_similarity.__get__(rag, RAG)
-    rag._vectorized_cosine_similarity = RAG._vectorized_cosine_similarity.__get__(rag, RAG)
-    rag._deduplicate_chunks = RAG._deduplicate_chunks.__get__(rag, RAG)
-    rag.process_web_urls = RAG.process_web_urls.__get__(rag, RAG)
-    rag.retrieve = RAG.retrieve.__get__(rag, RAG)
+    rag = unittest.mock.MagicMock()
+    rag._get_file_type = rag.RAG._get_file_type.__get__(rag, rag.RAG)
+    rag._detect_code_language = rag.RAG._detect_code_language.__get__(rag, rag.RAG)
+    rag._cosine_similarity = rag.RAG._vectorized_cosine_similarity.__get__(rag, rag.RAG)
+    rag._vectorized_cosine_similarity = rag.RAG._vectorized_cosine_similarity.__get__(rag, rag.RAG)
+    rag._deduplicate_chunks = rag.RAG._deduplicate_chunks.__get__(rag, rag.RAG)
+    rag.process_web_urls = rag.RAG.process_web_urls.__get__(rag, rag.RAG)
+    rag.retrieve = rag.RAG.retrieve.__get__(rag, rag.RAG)
     return rag
 
 
-def test_get_file_type_python(rag_instance: MagicMock) -> None:
+def test_get_file_type_python(rag_instance: unittest.mock.MagicMock) -> None:
     """Test file type detection for Python files."""
-    assert rag_instance._get_file_type("test.py") == FileTypes.CODE
-    assert rag_instance._get_file_type("/path/to/script.py") == FileTypes.CODE
+    assert rag_instance._get_file_type("test.py") == constants.FileTypes.CODE
+    assert rag_instance._get_file_type("/path/to/script.py") == constants.FileTypes.CODE
 
 
-def test_get_file_type_javascript(rag_instance: MagicMock) -> None:
+def test_get_file_type_javascript(rag_instance: unittest.mock.MagicMock) -> None:
     """Test file type detection for JavaScript files."""
-    assert rag_instance._get_file_type("app.js") == FileTypes.CODE
-    assert rag_instance._get_file_type("component.jsx") == FileTypes.CODE
-    assert rag_instance._get_file_type("types.ts") == FileTypes.CODE
-    assert rag_instance._get_file_type("Component.tsx") == FileTypes.CODE
+    assert rag_instance._get_file_type("app.js") == constants.FileTypes.CODE
+    assert rag_instance._get_file_type("component.jsx") == constants.FileTypes.CODE
+    assert rag_instance._get_file_type("types.ts") == constants.FileTypes.CODE
+    assert rag_instance._get_file_type("Component.tsx") == constants.FileTypes.CODE
 
 
-def test_get_file_type_markdown(rag_instance: MagicMock) -> None:
+def test_get_file_type_markdown(rag_instance: unittest.mock.MagicMock) -> None:
     """Test file type detection for Markdown files."""
-    assert rag_instance._get_file_type("README.md") == FileTypes.MARKDOWN
-    assert rag_instance._get_file_type("/docs/guide.md") == FileTypes.MARKDOWN
+    assert rag_instance._get_file_type("README.md") == constants.FileTypes.MARKDOWN
+    assert rag_instance._get_file_type("/docs/guide.md") == constants.FileTypes.MARKDOWN
 
 
-def test_get_file_type_html(rag_instance: MagicMock) -> None:
+def test_get_file_type_html(rag_instance: unittest.mock.MagicMock) -> None:
     """Test file type detection for HTML files."""
-    assert rag_instance._get_file_type("index.html") == FileTypes.HTML
-    assert rag_instance._get_file_type("page.htm") == FileTypes.HTML
+    assert rag_instance._get_file_type("index.html") == constants.FileTypes.HTML
+    assert rag_instance._get_file_type("page.htm") == constants.FileTypes.HTML
 
 
-def test_get_file_type_text(rag_instance: MagicMock) -> None:
+def test_get_file_type_text(rag_instance: unittest.mock.MagicMock) -> None:
     """Test file type detection for text files."""
-    assert rag_instance._get_file_type("notes.txt") == FileTypes.TEXT
+    assert rag_instance._get_file_type("notes.txt") == constants.FileTypes.TEXT
 
 
-def test_get_file_type_unknown(rag_instance: MagicMock) -> None:
+def test_get_file_type_unknown(rag_instance: unittest.mock.MagicMock) -> None:
     """Test file type detection for unknown files."""
-    assert rag_instance._get_file_type("file.xyz") == FileTypes.UNKNOWN
-    assert rag_instance._get_file_type("no_extension") == FileTypes.UNKNOWN
-    assert rag_instance._get_file_type("") == FileTypes.UNKNOWN
+    assert rag_instance._get_file_type("file.xyz") == constants.FileTypes.UNKNOWN
+    assert rag_instance._get_file_type("no_extension") == constants.FileTypes.UNKNOWN
+    assert rag_instance._get_file_type("") == constants.FileTypes.UNKNOWN
 
 
-@given(file_path=st.text())
-@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
-def test_get_file_type_arbitrary_paths(rag_instance: MagicMock, file_path: str) -> None:
+@hypothesis.given(file_path=hypothesis.strategies.text())
+@hypothesis.settings(suppress_health_check=[hypothesis.HealthCheck.function_scoped_fixture])
+def test_get_file_type_arbitrary_paths(rag_instance: unittest.mock.MagicMock, file_path: str) -> None:
     """Test file type detection with arbitrary file paths."""
     result = rag_instance._get_file_type(file_path)
-    assert isinstance(result, FileTypes)
+    assert isinstance(result, constants.FileTypes)
 
 
-def test_detect_code_language_python(rag_instance: MagicMock) -> None:
+def test_detect_code_language_python(rag_instance: unittest.mock.MagicMock) -> None:
     """Test language detection for Python files."""
     assert rag_instance._detect_code_language("script.py") == "python"
     assert rag_instance._detect_code_language("/path/to/module.py") == "python"
 
 
-def test_detect_code_language_javascript(rag_instance: MagicMock) -> None:
+def test_detect_code_language_javascript(rag_instance: unittest.mock.MagicMock) -> None:
     """Test language detection for JavaScript/TypeScript files."""
     assert rag_instance._detect_code_language("app.js") == "javascript"
     assert rag_instance._detect_code_language("component.jsx") == "javascript"
@@ -86,7 +86,7 @@ def test_detect_code_language_javascript(rag_instance: MagicMock) -> None:
     assert rag_instance._detect_code_language("Component.tsx") == "typescript"
 
 
-def test_detect_code_language_other_languages(rag_instance: MagicMock) -> None:
+def test_detect_code_language_other_languages(rag_instance: unittest.mock.MagicMock) -> None:
     """Test language detection for other programming languages."""
     assert rag_instance._detect_code_language("Main.java") == "java"
     assert rag_instance._detect_code_language("program.cpp") == "cpp"
@@ -96,22 +96,22 @@ def test_detect_code_language_other_languages(rag_instance: MagicMock) -> None:
     assert rag_instance._detect_code_language("query.sql") == "sql"
 
 
-def test_detect_code_language_unknown(rag_instance: MagicMock) -> None:
+def test_detect_code_language_unknown(rag_instance: unittest.mock.MagicMock) -> None:
     """Test language detection for unknown file types."""
     assert rag_instance._detect_code_language("file.xyz") == "unknown"
     assert rag_instance._detect_code_language("no_extension") == "unknown"
     assert rag_instance._detect_code_language("") == "unknown"
 
 
-@given(file_path=st.text())
-@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
-def test_detect_code_language_arbitrary_paths(rag_instance: MagicMock, file_path: str) -> None:
+@hypothesis.given(file_path=hypothesis.strategies.text())
+@hypothesis.settings(suppress_health_check=[hypothesis.HealthCheck.function_scoped_fixture])
+def test_detect_code_language_arbitrary_paths(rag_instance: unittest.mock.MagicMock, file_path: str) -> None:
     """Test language detection with arbitrary file paths."""
     result = rag_instance._detect_code_language(file_path)
     assert isinstance(result, str)
 
 
-def test_cosine_similarity_identical_vectors(rag_instance: MagicMock) -> None:
+def test_cosine_similarity_identical_vectors(rag_instance: unittest.mock.MagicMock) -> None:
     """Test cosine similarity with identical vectors."""
     vec1 = [1.0, 2.0, 3.0]
     vec2 = [1.0, 2.0, 3.0]
@@ -120,7 +120,7 @@ def test_cosine_similarity_identical_vectors(rag_instance: MagicMock) -> None:
     assert abs(similarity - 1.0) < 1e-10
 
 
-def test_cosine_similarity_orthogonal_vectors(rag_instance: MagicMock) -> None:
+def test_cosine_similarity_orthogonal_vectors(rag_instance: unittest.mock.MagicMock) -> None:
     """Test cosine similarity with orthogonal vectors."""
     vec1 = [1.0, 0.0]
     vec2 = [0.0, 1.0]
@@ -129,7 +129,7 @@ def test_cosine_similarity_orthogonal_vectors(rag_instance: MagicMock) -> None:
     assert abs(similarity - 0.0) < 1e-10
 
 
-def test_cosine_similarity_opposite_vectors(rag_instance: MagicMock) -> None:
+def test_cosine_similarity_opposite_vectors(rag_instance: unittest.mock.MagicMock) -> None:
     """Test cosine similarity with opposite vectors."""
     vec1 = [1.0, 2.0, 3.0]
     vec2 = [-1.0, -2.0, -3.0]
@@ -138,7 +138,7 @@ def test_cosine_similarity_opposite_vectors(rag_instance: MagicMock) -> None:
     assert abs(similarity - (-1.0)) < 1e-10
 
 
-def test_cosine_similarity_zero_vectors(rag_instance: MagicMock) -> None:
+def test_cosine_similarity_zero_vectors(rag_instance: unittest.mock.MagicMock) -> None:
     """Test cosine similarity with zero vectors."""
     vec1 = [0.0, 0.0, 0.0]
     vec2 = [1.0, 2.0, 3.0]
@@ -147,9 +147,11 @@ def test_cosine_similarity_zero_vectors(rag_instance: MagicMock) -> None:
     assert similarity == 0.0
 
 
-@given(vec1=st.lists(st.floats(min_value=-10, max_value=10), min_size=1, max_size=10))
-@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
-def test_cosine_similarity_arbitrary_vectors(rag_instance: MagicMock, vec1: list[float]) -> None:
+@hypothesis.given(
+    vec1=hypothesis.strategies.lists(hypothesis.strategies.floats(min_value=-10, max_value=10), min_size=1, max_size=10)
+)
+@hypothesis.settings(suppress_health_check=[hypothesis.HealthCheck.function_scoped_fixture])
+def test_cosine_similarity_arbitrary_vectors(rag_instance: unittest.mock.MagicMock, vec1: list[float]) -> None:
     """Test cosine similarity with arbitrary vectors."""
     # Create a second vector of same length
     vec2 = [x + 1.0 for x in vec1]
@@ -160,7 +162,7 @@ def test_cosine_similarity_arbitrary_vectors(rag_instance: MagicMock, vec1: list
     assert -1.01 <= similarity <= 1.01
 
 
-def test_vectorized_cosine_similarity_basic(rag_instance: MagicMock) -> None:
+def test_vectorized_cosine_similarity_basic(rag_instance: unittest.mock.MagicMock) -> None:
     """Test vectorized cosine similarity with basic input."""
     embeddings1 = np.array([[1.0, 0.0], [0.0, 1.0]])
     embeddings2 = np.array([[1.0, 0.0], [0.0, 1.0]])
@@ -179,7 +181,7 @@ def test_vectorized_cosine_similarity_basic(rag_instance: MagicMock) -> None:
     assert abs(similarities[1, 0] - 0.0) < 1e-10
 
 
-def test_vectorized_cosine_similarity_different_sizes(rag_instance: MagicMock) -> None:
+def test_vectorized_cosine_similarity_different_sizes(rag_instance: unittest.mock.MagicMock) -> None:
     """Test vectorized cosine similarity with different matrix sizes."""
     embeddings1 = np.array([[1.0, 0.0, 0.0]])  # 1x3
     embeddings2 = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])  # 2x3
@@ -192,7 +194,7 @@ def test_vectorized_cosine_similarity_different_sizes(rag_instance: MagicMock) -
     assert abs(similarities[0, 1] - 0.0) < 1e-10  # Orthogonal vectors
 
 
-def test_vectorized_cosine_similarity_zero_norm_handling(rag_instance: MagicMock) -> None:
+def test_vectorized_cosine_similarity_zero_norm_handling(rag_instance: unittest.mock.MagicMock) -> None:
     """Test vectorized cosine similarity handles zero norm vectors."""
     embeddings1 = np.array([[0.0, 0.0, 0.0]])  # Zero vector
     embeddings2 = np.array([[1.0, 2.0, 3.0]])  # Non-zero vector
@@ -204,18 +206,22 @@ def test_vectorized_cosine_similarity_zero_norm_handling(rag_instance: MagicMock
     assert isinstance(similarities[0, 0], float | np.floating)
 
 
-@patch("chatbot.rag.RAG._vectorized_cosine_similarity")
-def test_deduplicate_chunks_empty_list(mock_similarity: MagicMock, rag_instance: MagicMock) -> None:
+@unittest.mock.patch("rag.RAG._vectorized_cosine_similarity")
+def test_deduplicate_chunks_empty_list(
+    mock_similarity: unittest.mock.MagicMock, rag_instance: unittest.mock.MagicMock
+) -> None:
     """Test deduplication with empty chunk list."""
     result = rag_instance._deduplicate_chunks([])
     assert result == []
     mock_similarity.assert_not_called()
 
 
-@patch("chatbot.rag.RAG._vectorized_cosine_similarity")
-def test_deduplicate_chunks_single_chunk(mock_similarity: MagicMock, rag_instance: MagicMock) -> None:
+@unittest.mock.patch("rag.RAG._vectorized_cosine_similarity")
+def test_deduplicate_chunks_single_chunk(
+    mock_similarity: unittest.mock.MagicMock, rag_instance: unittest.mock.MagicMock
+) -> None:
     """Test deduplication with single chunk."""
-    rag_instance.embedding_model = MagicMock()
+    rag_instance.embedding_model = unittest.mock.MagicMock()
     rag_instance.embedding_model.get_text_embedding_batch.return_value = [[1.0, 0.0]]
 
     chunks = ["Single chunk"]
@@ -225,12 +231,14 @@ def test_deduplicate_chunks_single_chunk(mock_similarity: MagicMock, rag_instanc
     mock_similarity.assert_not_called()
 
 
-@patch("chatbot.rag.CHATBOT_SETTINGS")
-def test_deduplicate_chunks_no_duplicates(mock_settings: MagicMock, rag_instance: MagicMock) -> None:
+@unittest.mock.patch("CHATBOT_SETTINGS")
+def test_deduplicate_chunks_no_duplicates(
+    mock_settings: unittest.mock.MagicMock, rag_instance: unittest.mock.MagicMock
+) -> None:
     """Test deduplication with no duplicate chunks."""
     mock_settings.rag.deduplication_similarity_threshold = 0.9
 
-    rag_instance.embedding_model = MagicMock()
+    rag_instance.embedding_model = unittest.mock.MagicMock()
 
     # Mock embeddings for different chunks (low similarity)
     rag_instance.embedding_model.get_text_embedding_batch.return_value = [
@@ -247,12 +255,14 @@ def test_deduplicate_chunks_no_duplicates(mock_settings: MagicMock, rag_instance
     assert "Second chunk" in result
 
 
-@patch("chatbot.rag.CHATBOT_SETTINGS")
-def test_deduplicate_chunks_with_duplicates(mock_settings: MagicMock, rag_instance: MagicMock) -> None:
+@unittest.mock.patch("CHATBOT_SETTINGS")
+def test_deduplicate_chunks_with_duplicates(
+    mock_settings: unittest.mock.MagicMock, rag_instance: unittest.mock.MagicMock
+) -> None:
     """Test deduplication with duplicate chunks."""
     mock_settings.rag.deduplication_similarity_threshold = 0.9
 
-    rag_instance.embedding_model = MagicMock()
+    rag_instance.embedding_model = unittest.mock.MagicMock()
 
     # Mock embeddings for very similar chunks
     rag_instance.embedding_model.get_text_embedding_batch.return_value = [
@@ -268,11 +278,11 @@ def test_deduplicate_chunks_with_duplicates(mock_settings: MagicMock, rag_instan
     assert result[0] == "Original chunk"
 
 
-@given(chunks=st.lists(st.text(min_size=1), min_size=1, max_size=5))
-@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
-def test_deduplicate_chunks_arbitrary_input(rag_instance: MagicMock, chunks: list[str]) -> None:
+@hypothesis.given(chunks=hypothesis.strategies.lists(hypothesis.strategies.text(min_size=1), min_size=1, max_size=5))
+@hypothesis.settings(suppress_health_check=[hypothesis.HealthCheck.function_scoped_fixture])
+def test_deduplicate_chunks_arbitrary_input(rag_instance: unittest.mock.MagicMock, chunks: list[str]) -> None:
     """Test deduplication with arbitrary chunk lists."""
-    rag_instance.embedding_model = MagicMock()
+    rag_instance.embedding_model = unittest.mock.MagicMock()
 
     # Mock embeddings - make them orthogonal to avoid deduplication
     embeddings = []
@@ -283,7 +293,7 @@ def test_deduplicate_chunks_arbitrary_input(rag_instance: MagicMock, chunks: lis
 
     rag_instance.embedding_model.get_text_embedding_batch.return_value = embeddings
 
-    with patch("chatbot.rag.CHATBOT_SETTINGS") as mock_settings:
+    with unittest.mock.patch("CHATBOT_SETTINGS") as mock_settings:
         mock_settings.rag.deduplication_similarity_threshold = 0.9
 
         result = rag_instance._deduplicate_chunks(chunks)
@@ -296,11 +306,11 @@ def test_deduplicate_chunks_arbitrary_input(rag_instance: MagicMock, chunks: lis
 
 
 @pytest.mark.asyncio
-async def test_process_web_urls_no_urls(rag_instance: MagicMock) -> None:
+async def test_process_web_urls_no_urls(rag_instance: unittest.mock.MagicMock) -> None:
     """Test processing web URLs when no URLs are found."""
-    mock_client = AsyncMock()
+    mock_client = unittest.mock.AsyncMock()
 
-    with patch("chatbot.utils.web.lookup_http_urls_in_prompt") as mock_lookup:
+    with unittest.mock.patch("chatbot.utils.web.lookup_http_urls_in_prompt") as mock_lookup:
         mock_lookup.return_value = ([], [])
 
         await rag_instance.process_web_urls("No URLs here", mock_client)
@@ -310,17 +320,17 @@ async def test_process_web_urls_no_urls(rag_instance: MagicMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_process_web_urls_with_content(rag_instance: MagicMock) -> None:
+async def test_process_web_urls_with_content(rag_instance: unittest.mock.MagicMock) -> None:
     """Test processing web URLs with actual content."""
-    mock_client = AsyncMock()
+    mock_client = unittest.mock.AsyncMock()
 
-    with patch("chatbot.utils.web.lookup_http_urls_in_prompt") as mock_lookup:
+    with unittest.mock.patch("chatbot.utils.web.lookup_http_urls_in_prompt") as mock_lookup:
         mock_lookup.return_value = (["http://example.com"], ["<html><body>Test content</body></html>"])
 
-        rag_instance._html_pipeline = MagicMock()
+        rag_instance._html_pipeline = unittest.mock.MagicMock()
         rag_instance._html_pipeline.run.return_value = ["processed_node"]
 
-        with patch("chatbot.rag.CHATBOT_SETTINGS") as mock_settings:
+        with unittest.mock.patch("CHATBOT_SETTINGS") as mock_settings:
             mock_settings.rag.use_adaptive_parsing = True
 
             await rag_instance.process_web_urls("Visit http://example.com", mock_client)
@@ -331,11 +341,11 @@ async def test_process_web_urls_with_content(rag_instance: MagicMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_process_web_urls_empty_content(rag_instance: MagicMock) -> None:
+async def test_process_web_urls_empty_content(rag_instance: unittest.mock.MagicMock) -> None:
     """Test processing web URLs with empty content."""
-    mock_client = AsyncMock()
+    mock_client = unittest.mock.AsyncMock()
 
-    with patch("chatbot.utils.web.lookup_http_urls_in_prompt") as mock_lookup:
+    with unittest.mock.patch("chatbot.utils.web.lookup_http_urls_in_prompt") as mock_lookup:
         mock_lookup.return_value = (
             ["http://example.com"],
             [""],  # Empty content
@@ -347,14 +357,14 @@ async def test_process_web_urls_empty_content(rag_instance: MagicMock) -> None:
         rag_instance.index.insert_nodes.assert_not_called()
 
 
-@given(prompt=st.text())
-@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
+@hypothesis.given(prompt=hypothesis.strategies.text())
+@hypothesis.settings(suppress_health_check=[hypothesis.HealthCheck.function_scoped_fixture])
 @pytest.mark.asyncio
-async def test_process_web_urls_arbitrary_prompts(rag_instance: MagicMock, prompt: str) -> None:
+async def test_process_web_urls_arbitrary_prompts(rag_instance: unittest.mock.MagicMock, prompt: str) -> None:
     """Test processing web URLs with arbitrary prompts."""
-    mock_client = AsyncMock()
+    mock_client = unittest.mock.AsyncMock()
 
-    with patch("chatbot.utils.web.lookup_http_urls_in_prompt") as mock_lookup:
+    with unittest.mock.patch("chatbot.utils.web.lookup_http_urls_in_prompt") as mock_lookup:
         mock_lookup.return_value = ([], [])  # No URLs found
 
         # Should not raise an exception
@@ -363,13 +373,13 @@ async def test_process_web_urls_arbitrary_prompts(rag_instance: MagicMock, promp
         rag_instance.index.insert_nodes.assert_not_called()
 
 
-def test_retrieve_empty_query(rag_instance: MagicMock) -> None:
+def test_retrieve_empty_query(rag_instance: unittest.mock.MagicMock) -> None:
     """Test retrieve with empty query."""
-    rag_instance._deduplicate_chunks = MagicMock(return_value=[])
-    rag_instance.retriever = MagicMock()
+    rag_instance._deduplicate_chunks = unittest.mock.MagicMock(return_value=[])
+    rag_instance.retriever = unittest.mock.MagicMock()
     rag_instance.retriever.retrieve.return_value = []
 
-    with patch("chatbot.rag.CHATBOT_SETTINGS") as mock_settings:
+    with unittest.mock.patch("CHATBOT_SETTINGS") as mock_settings:
         mock_settings.rag.enable_relevance_filtering = False
         mock_settings.rag.top_k = 5
 
@@ -377,23 +387,23 @@ def test_retrieve_empty_query(rag_instance: MagicMock) -> None:
         assert result == []
 
 
-def test_retrieve_with_relevance_filtering(rag_instance: MagicMock) -> None:
+def test_retrieve_with_relevance_filtering(rag_instance: unittest.mock.MagicMock) -> None:
     """Test retrieve with relevance filtering enabled."""
-    rag_instance._deduplicate_chunks = MagicMock(return_value=["filtered chunk"])
+    rag_instance._deduplicate_chunks = unittest.mock.MagicMock(return_value=["filtered chunk"])
 
     # Mock nodes with different scores
-    high_score_node = MagicMock()
+    high_score_node = unittest.mock.MagicMock()
     high_score_node.text = "relevant content"
     high_score_node.score = 0.8
 
-    low_score_node = MagicMock()
+    low_score_node = unittest.mock.MagicMock()
     low_score_node.text = "irrelevant content"
     low_score_node.score = 0.6
 
-    rag_instance.retriever = MagicMock()
+    rag_instance.retriever = unittest.mock.MagicMock()
     rag_instance.retriever.retrieve.return_value = [high_score_node, low_score_node]
 
-    with patch("chatbot.rag.CHATBOT_SETTINGS") as mock_settings:
+    with unittest.mock.patch("CHATBOT_SETTINGS") as mock_settings:
         mock_settings.rag.enable_relevance_filtering = True
         mock_settings.rag.relevance_threshold = 0.75
         mock_settings.rag.top_k = 5
@@ -405,23 +415,23 @@ def test_retrieve_with_relevance_filtering(rag_instance: MagicMock) -> None:
         assert result == ["filtered chunk"]
 
 
-def test_retrieve_without_relevance_filtering(rag_instance: MagicMock) -> None:
+def test_retrieve_without_relevance_filtering(rag_instance: unittest.mock.MagicMock) -> None:
     """Test retrieve without relevance filtering."""
-    rag_instance._deduplicate_chunks = MagicMock(return_value=["all chunks"])
+    rag_instance._deduplicate_chunks = unittest.mock.MagicMock(return_value=["all chunks"])
 
     # Mock nodes
-    node1 = MagicMock()
+    node1 = unittest.mock.MagicMock()
     node1.text = "content 1"
     node1.score = 0.8
 
-    node2 = MagicMock()
+    node2 = unittest.mock.MagicMock()
     node2.text = "content 2"
     node2.score = 0.6
 
-    rag_instance.retriever = MagicMock()
+    rag_instance.retriever = unittest.mock.MagicMock()
     rag_instance.retriever.retrieve.return_value = [node1, node2]
 
-    with patch("chatbot.rag.CHATBOT_SETTINGS") as mock_settings:
+    with unittest.mock.patch("CHATBOT_SETTINGS") as mock_settings:
         mock_settings.rag.enable_relevance_filtering = False
         mock_settings.rag.top_k = 5
 
@@ -432,15 +442,15 @@ def test_retrieve_without_relevance_filtering(rag_instance: MagicMock) -> None:
         assert result == ["all chunks"]
 
 
-@given(query=st.text(min_size=1))
-@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
-def test_retrieve_arbitrary_queries(rag_instance: MagicMock, query: str) -> None:
+@hypothesis.given(query=hypothesis.strategies.text(min_size=1))
+@hypothesis.settings(suppress_health_check=[hypothesis.HealthCheck.function_scoped_fixture])
+def test_retrieve_arbitrary_queries(rag_instance: unittest.mock.MagicMock, query: str) -> None:
     """Test retrieve with arbitrary query strings."""
-    rag_instance._deduplicate_chunks = MagicMock(return_value=[])
-    rag_instance.retriever = MagicMock()
+    rag_instance._deduplicate_chunks = unittest.mock.MagicMock(return_value=[])
+    rag_instance.retriever = unittest.mock.MagicMock()
     rag_instance.retriever.retrieve.return_value = []
 
-    with patch("chatbot.rag.CHATBOT_SETTINGS") as mock_settings:
+    with unittest.mock.patch("CHATBOT_SETTINGS") as mock_settings:
         mock_settings.rag.enable_relevance_filtering = False
         mock_settings.rag.top_k = 5
 
@@ -448,9 +458,9 @@ def test_retrieve_arbitrary_queries(rag_instance: MagicMock, query: str) -> None
         assert isinstance(result, list)
 
 
-def test_retrieve_handles_exceptions(rag_instance: MagicMock) -> None:
+def test_retrieve_handles_exceptions(rag_instance: unittest.mock.MagicMock) -> None:
     """Test that retrieve handles exceptions gracefully."""
-    rag_instance.retriever = MagicMock()
+    rag_instance.retriever = unittest.mock.MagicMock()
     rag_instance.retriever.retrieve.side_effect = Exception("Retrieval failed")
 
     result = rag_instance.retrieve("test query")
