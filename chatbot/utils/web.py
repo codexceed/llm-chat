@@ -9,7 +9,7 @@ from streamlit import logger
 
 LOGGER = logger.get_logger(__name__)
 URL_REGEX = re.compile(
-    r"https?\:\/\/(?:[\w\d\.\:\-\@\#]+)(?:\/[\w\d\-\%\/\.]+)?(?:\?(?:[\w\d]+\=[\w\d\:\/\.\@\;]+)(?:\&[\w\d]+\=[\w\d\:\/\.\@\;]+)*)?",
+    r"https?\:\/\/(?:[\w\d\.\:\-\@]+)(?:\/[\w\d\-\%\/\.]+)?(?:\?(?:[\w\d]+\=[\w\d\:\/\.\@\;]+)(?:\&[\w\d]+\=[\w\d\:\/\.\@\;]+)*)?(?:\#(?:[\w.])*)?",
     re.IGNORECASE,
 )
 
