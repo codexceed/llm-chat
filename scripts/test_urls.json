@@ -1,0 +1,642 @@
+{
+  "description": "Test URL configurations for web lookup evaluation",
+  "categories": {
+    "popular_sites": {
+      "description": "Popular websites that should generally be reliable",
+      "urls": [
+        "https://www.google.com",
+        "https://www.github.com",
+        "https://www.stackoverflow.com",
+        "https://www.wikipedia.org",
+        "https://www.python.org",
+        "https://www.amazon.com",
+        "https://www.microsoft.com",
+        "https://www.apple.com",
+        "https://www.facebook.com",
+        "https://www.twitter.com",
+        "https://www.linkedin.com",
+        "https://www.youtube.com",
+        "https://www.netflix.com",
+        "https://www.cloudflare.com"
+      ]
+    },
+    "news_sites": {
+      "description": "News and media sites",
+      "urls": [
+        "https://www.bbc.com/news",
+        "https://www.reuters.com",
+        "https://www.cnn.com",
+        "https://www.nytimes.com",
+        "https://www.theguardian.com",
+        "https://www.washingtonpost.com",
+        "https://www.npr.org",
+        "https://www.ap.org",
+        "https://www.bloomberg.com",
+        "https://techcrunch.com",
+        "https://www.wired.com",
+        "https://arstechnica.com"
+      ]
+    },
+    "tech_sites": {
+      "description": "Technology and developer sites",
+      "urls": [
+        "https://news.ycombinator.com",
+        "https://www.reddit.com",
+        "https://www.medium.com",
+        "https://dev.to",
+        "https://hashnode.com",
+        "https://www.producthunt.com",
+        "https://slashdot.org",
+        "https://www.theregister.com",
+        "https://www.hackernews.com"
+      ]
+    },
+    "documentation_sites": {
+      "description": "Documentation and reference sites",
+      "urls": [
+        "https://docs.python.org/3/",
+        "https://httpx.readthedocs.io",
+        "https://docs.streamlit.io/",
+        "https://nodejs.org/en/docs/",
+        "https://developer.mozilla.org",
+        "https://docs.docker.com",
+        "https://kubernetes.io/docs/",
+        "https://docs.aws.amazon.com",
+        "https://cloud.google.com/docs",
+        "https://docs.microsoft.com",
+        "https://go.dev/doc/",
+        "https://rust-lang.org/learn",
+        "https://docs.djangoproject.com",
+        "https://vuejs.org/guide/",
+        "https://angular.io/docs"
+      ]
+    },
+    "api_endpoints": {
+      "description": "API endpoints (some may fail as expected)",
+      "urls": [
+        "https://api.github.com",
+        "https://jsonplaceholder.typicode.com/posts/1",
+        "https://api.ipify.org?format=json",
+        "https://dog.ceo/api/breeds/image/random",
+        "https://catfact.ninja/fact",
+        "https://httpbin.org/json",
+        "https://httpbin.org/get"
+      ]
+    },
+    "redirect_cases": {
+      "description": "Redirect scenarios",
+      "urls": [
+        "http://google.com",
+        "http://github.com",
+        "http://stackoverflow.com",
+        "https://httpbin.org/redirect/3",
+        "https://httpbin.org/redirect-to?url=https://www.example.com",
+        "http://wikipedia.org",
+        "http://amazon.com",
+        "http://microsoft.com",
+        "http://apple.com",
+        "https://httpbin.org/redirect/1",
+        "https://httpbin.org/redirect/5",
+        "https://httpbin.org/absolute-redirect/2",
+        "https://httpbin.org/relative-redirect/3",
+        "http://reddit.com",
+        "http://medium.com",
+        "http://python.org",
+        "http://nodejs.org"
+      ]
+    },
+    "cdn_and_static": {
+      "description": "CDN and static content sites",
+      "urls": [
+        "https://cdnjs.cloudflare.com",
+        "https://unpkg.com",
+        "https://cdn.jsdelivr.net",
+        "https://picsum.photos/200/300",
+        "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap",
+        "https://dummyimage.com/600x400/000/fff"
+      ]
+    },
+    "government_sites": {
+      "description": "Government and official sites",
+      "urls": [
+        "https://www.usa.gov",
+        "https://www.gov.uk",
+        "https://www.canada.ca",
+        "https://europa.eu",
+        "https://www.whitehouse.gov"
+      ]
+    },
+    "international": {
+      "description": "International sites with different languages and regions",
+      "urls": [
+        "https://www.baidu.com",
+        "https://www.yandex.com",
+        "https://www.naver.com",
+        "https://www.yahoo.co.jp",
+        "https://www.globo.com",
+        "https://www.lemonde.fr"
+      ]
+    },
+    "slow_sites": {
+      "description": "Sites that might be slower to respond",
+      "urls": [
+        "https://httpbin.org/delay/5",
+        "https://httpbin.org/delay/10",
+        "https://httpstat.us/200?sleep=3000",
+        "https://httpbin.org/delay/1",
+        "https://httpbin.org/delay/3",
+        "https://httpbin.org/delay/7",
+        "https://httpstat.us/200?sleep=5000",
+        "https://httpstat.us/200?sleep=8000",
+        "https://httpstat.us/200?sleep=1000"
+      ]
+    },
+    "variable_performance": {
+      "description": "Sites with unpredictable response times or reliability",
+      "urls": [
+        "https://httpbin.org/drip?duration=3&numbytes=100",
+        "https://httpbin.org/drip?duration=5&numbytes=200",
+        "https://httpbin.org/drip?duration=8&numbytes=500",
+        "https://httpstat.us/200?sleep=2000",
+        "https://httpbin.org/bytes/10000",
+        "https://httpbin.org/bytes/50000",
+        "https://httpbin.org/stream-bytes/1024?chunk_size=256",
+        "https://httpbin.org/range/1024"
+      ]
+    },
+    "heavy_content": {
+      "description": "Sites that return large amounts of data",
+      "urls": [
+        "https://httpbin.org/base64/SFRUUEJJTiBpcyBhd2Vzb21l",
+        "https://httpbin.org/html",
+        "https://httpbin.org/xml",
+        "https://httpbin.org/gzip",
+        "https://httpbin.org/deflate",
+        "https://httpbin.org/brotli"
+      ]
+    },
+    "complex_redirects": {
+      "description": "Complex redirect chains and scenarios",
+      "urls": [
+        "https://httpbin.org/redirect-to?url=http://httpbin.org/redirect-to?url=https://www.example.com",
+        "https://httpbin.org/redirect-to?status_code=301&url=https://www.example.com",
+        "https://httpbin.org/redirect-to?status_code=302&url=https://www.example.com",
+        "https://httpbin.org/redirect-to?status_code=307&url=https://www.example.com",
+        "https://httpbin.org/redirect-to?status_code=308&url=https://www.example.com"
+      ]
+    },
+    "authentication_required": {
+      "description": "Sites that require authentication or return 401/403 errors",
+      "urls": [
+        "https://httpbin.org/basic-auth/user/pass",
+        "https://httpbin.org/bearer",
+        "https://httpbin.org/digest-auth/auth/user/pass",
+        "https://httpbin.org/hidden-basic-auth/user/pass",
+        "https://httpstat.us/401",
+        "https://httpstat.us/403",
+        "https://api.github.com/user",
+        "https://api.twitter.com/2/tweets",
+        "https://graph.facebook.com/me"
+      ]
+    },
+    "malformed_urls": {
+      "description": "Malformed or edge-case URLs to test URL parsing",
+      "urls": [
+        "https://example..com",
+        "https://example.com:443",
+        "https://example.com:8080",
+        "https://192.168.1.1",
+        "https://example.com/path with spaces",
+        "https://example.com/path%20with%20encoding",
+        "https://example.com/../test",
+        "https://example.com/./test",
+        "https://example.com//double//slashes",
+        "https://example.com?query=value&query=value2",
+        "https://example.com#fragment",
+        "https://user:pass@example.com"
+      ]
+    },
+    "javascript_heavy": {
+      "description": "JavaScript-heavy SPAs that require JS execution",
+      "urls": [
+        "https://angular.io",
+        "https://vuejs.org",
+        "https://reactjs.org",
+        "https://www.airbnb.com",
+        "https://www.uber.com",
+        "https://www.spotify.com",
+        "https://www.notion.so",
+        "https://www.figma.com",
+        "https://vercel.com",
+        "https://www.algolia.com"
+      ]
+    },
+    "cookie_dependent": {
+      "description": "Sites that heavily depend on cookies or sessions",
+      "urls": [
+        "https://httpbin.org/cookies",
+        "https://httpbin.org/cookies/set?test=value",
+        "https://httpbin.org/cookies/delete?test",
+        "https://www.amazon.com/gp/cart",
+        "https://www.ebay.com/myb/WatchList",
+        "https://www.etsy.com/cart"
+      ]
+    },
+    "rate_limited": {
+      "description": "Sites that implement rate limiting",
+      "urls": [
+        "https://httpstat.us/429",
+        "https://api.github.com/search/repositories?q=javascript",
+        "https://api.twitter.com/1.1/statuses/mentions_timeline.json",
+        "https://www.instagram.com/graphql/query",
+        "https://www.linkedin.com/voyager/api"
+      ]
+    },
+    "geo_restricted": {
+      "description": "Sites with geographical restrictions",
+      "urls": [
+        "https://www.hulu.com",
+        "https://www.pandora.com",
+        "https://www.bbc.co.uk/iplayer",
+        "https://www.hbo.com",
+        "https://www.hotstar.com"
+      ]
+    },
+    "content_types": {
+      "description": "Various content types and MIME types",
+      "urls": [
+        "https://httpbin.org/image/jpeg",
+        "https://httpbin.org/image/png",
+        "https://httpbin.org/image/svg",
+        "https://httpbin.org/image/webp",
+        "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+        "https://sample-videos.com/csv/Sample-Spreadsheet-10-rows.csv",
+        "https://filesamples.com/samples/document/txt/sample1.txt",
+        "https://httpbin.org/robots.txt",
+        "https://httpbin.org/deny"
+      ]
+    },
+    "encoding_challenges": {
+      "description": "Different character encodings and special characters",
+      "urls": [
+        "https://httpbin.org/encoding/utf8",
+        "https://www.china.com.cn",
+        "https://www.asahi.com",
+        "https://www.pravda.ru",
+        "https://www.aljazeera.net",
+        "https://example.com/测试",
+        "https://example.com/тест",
+        "https://example.com/テスト",
+        "https://httpbin.org/html?charset=iso-8859-1"
+      ]
+    },
+    "security_headers": {
+      "description": "Sites with various security headers",
+      "urls": [
+        "https://httpbin.org/response-headers?X-Frame-Options=DENY",
+        "https://httpbin.org/response-headers?Content-Security-Policy=default-src%20'none'",
+        "https://httpbin.org/response-headers?X-Content-Type-Options=nosniff",
+        "https://httpbin.org/response-headers?Strict-Transport-Security=max-age=31536000",
+        "https://securityheaders.com"
+      ]
+    },
+    "infinite_scroll": {
+      "description": "Sites with infinite scroll or pagination",
+      "urls": [
+        "https://www.reddit.com/r/all",
+        "https://www.pinterest.com",
+        "https://www.instagram.com",
+        "https://twitter.com/explore",
+        "https://www.tiktok.com/foryou"
+      ]
+    },
+    "captcha_protected": {
+      "description": "Sites typically protected by CAPTCHA",
+      "urls": [
+        "https://www.cloudflare.com/learning/bots/how-captchas-work/",
+        "https://www.google.com/recaptcha/api2/demo",
+        "https://www.hcaptcha.com/demo",
+        "https://captcha.com/demos/features/captcha-demo.aspx"
+      ]
+    },
+    "streaming_content": {
+      "description": "Streaming or chunked response sites",
+      "urls": [
+        "https://httpbin.org/stream/10",
+        "https://httpbin.org/stream-bytes/1024",
+        "https://httpbin.org/drip?duration=2&numbytes=10&code=200",
+        "https://stream.twitter.com/1.1/statuses/sample.json"
+      ]
+    },
+    "graphql_endpoints": {
+      "description": "GraphQL API endpoints",
+      "urls": [
+        "https://api.github.com/graphql",
+        "https://www.graphqlhub.com/graphql",
+        "https://countries.trevorblades.com/graphql",
+        "https://api.spacex.land/graphql"
+      ]
+    },
+    "status_codes": {
+      "description": "Various HTTP status codes for testing",
+      "urls": [
+        "https://httpstat.us/100",
+        "https://httpstat.us/200",
+        "https://httpstat.us/201",
+        "https://httpstat.us/204",
+        "https://httpstat.us/300",
+        "https://httpstat.us/301",
+        "https://httpstat.us/302",
+        "https://httpstat.us/304",
+        "https://httpstat.us/400",
+        "https://httpstat.us/401",
+        "https://httpstat.us/403",
+        "https://httpstat.us/404",
+        "https://httpstat.us/405",
+        "https://httpstat.us/408",
+        "https://httpstat.us/409",
+        "https://httpstat.us/410",
+        "https://httpstat.us/418",
+        "https://httpstat.us/429",
+        "https://httpstat.us/500",
+        "https://httpstat.us/501",
+        "https://httpstat.us/502",
+        "https://httpstat.us/503",
+        "https://httpstat.us/504",
+        "https://httpstat.us/520",
+        "https://httpstat.us/521",
+        "https://httpstat.us/522"
+      ]
+    },
+    "user_agent_dependent": {
+      "description": "Sites that behave differently based on User-Agent",
+      "urls": [
+        "https://httpbin.org/user-agent",
+        "https://www.whatismybrowser.com/detect/what-is-my-user-agent",
+        "https://www.linkedin.com",
+        "https://m.facebook.com",
+        "https://mobile.twitter.com"
+      ]
+    },
+    "compression_types": {
+      "description": "Different compression algorithms",
+      "urls": [
+        "https://httpbin.org/gzip",
+        "https://httpbin.org/deflate",
+        "https://httpbin.org/brotli",
+        "https://httpbin.org/response-headers?Content-Encoding=gzip"
+      ]
+    },
+    "cors_testing": {
+      "description": "CORS policy testing",
+      "urls": [
+        "https://httpbin.org/response-headers?Access-Control-Allow-Origin=*",
+        "https://httpbin.org/response-headers?Access-Control-Allow-Origin=https://example.com",
+        "https://api.github.com",
+        "https://api.openweathermap.org"
+      ]
+    },
+    "dns_challenges": {
+      "description": "DNS resolution challenges",
+      "urls": [
+        "https://localhost",
+        "https://127.0.0.1",
+        "https://0.0.0.0",
+        "https://non-existent-subdomain.google.com",
+        "https://this-is-a-very-long-subdomain-name-that-might-cause-issues.example.com"
+      ]
+    },
+    "edge_case_ports": {
+      "description": "Non-standard ports",
+      "urls": [
+        "https://example.com:8443",
+        "http://example.com:8080",
+        "https://example.com:443",
+        "http://example.com:80",
+        "https://example.com:3000",
+        "http://example.com:9000"
+      ]
+    },
+    "ssl_certificate_issues": {
+      "description": "SSL/TLS certificate test cases",
+      "urls": [
+        "https://expired.badssl.com",
+        "https://wrong.host.badssl.com",
+        "https://self-signed.badssl.com",
+        "https://untrusted-root.badssl.com",
+        "https://revoked.badssl.com",
+        "https://pinning-test.badssl.com"
+      ]
+    }
+  },
+  "test_sets": {
+    "default": {
+      "description": "Complete default test set with all categories",
+      "categories": [
+        "popular_sites",
+        "news_sites",
+        "tech_sites",
+        "documentation_sites",
+        "api_endpoints",
+        "redirect_cases",
+        "cdn_and_static"
+      ]
+    },
+    "minimal": {
+      "description": "Minimal test set for quick testing",
+      "urls": [
+        "https://www.google.com",
+        "https://www.github.com",
+        "https://www.example.com",
+        "https://httpstat.us/404",
+        "https://this-domain-definitely-does-not-exist.com"
+      ]
+    },
+    "high_reliability": {
+      "description": "High-reliability sites that should rarely fail",
+      "urls": [
+        "https://www.google.com",
+        "https://www.github.com",
+        "https://www.wikipedia.org",
+        "https://www.example.com",
+        "https://docs.python.org/3/",
+        "https://www.microsoft.com",
+        "https://developer.mozilla.org"
+      ]
+    },
+    "performance": {
+      "description": "Performance test URLs (mix of fast and slow sites)",
+      "urls": [
+        "https://www.google.com",
+        "https://www.github.com",
+        "https://www.cnn.com",
+        "https://api.github.com",
+        "https://httpbin.org/json",
+        "https://httpbin.org/delay/2",
+        "https://cdnjs.cloudflare.com"
+      ]
+    },
+    "error_testing": {
+      "description": "URLs specifically for testing error handling",
+      "urls": [
+        "https://httpstat.us/404",
+        "https://httpstat.us/500",
+        "https://httpstat.us/503",
+        "https://httpstat.us/timeout",
+        "https://this-domain-definitely-does-not-exist.com",
+        "https://httpbin.org/status/429"
+      ]
+    },
+    "comprehensive": {
+      "description": "Comprehensive test covering all categories",
+      "categories": [
+        "popular_sites",
+        "news_sites",
+        "tech_sites",
+        "documentation_sites",
+        "api_endpoints",
+        "redirect_cases",
+        "cdn_and_static",
+        "government_sites",
+        "international",
+        "slow_sites"
+      ]
+    },
+    "api_focused": {
+      "description": "Focus on API endpoints and JSON responses",
+      "urls": [
+        "https://api.github.com",
+        "https://jsonplaceholder.typicode.com/posts/1",
+        "https://httpbin.org/json",
+        "https://api.ipify.org?format=json",
+        "https://dog.ceo/api/breeds/image/random",
+        "https://catfact.ninja/fact"
+      ]
+    },
+    "unreliable_focused": {
+      "description": "Focus on redirects, slow loads, and variable performance",
+      "categories": [
+        "redirect_cases",
+        "slow_sites",
+        "variable_performance",
+        "heavy_content",
+        "complex_redirects"
+      ]
+    },
+    "redirect_heavy": {
+      "description": "Heavy emphasis on redirect testing",
+      "urls": [
+        "http://google.com",
+        "http://github.com",
+        "http://stackoverflow.com",
+        "http://wikipedia.org",
+        "http://amazon.com",
+        "https://httpbin.org/redirect/3",
+        "https://httpbin.org/redirect/5",
+        "https://httpbin.org/absolute-redirect/2",
+        "https://httpbin.org/relative-redirect/3",
+        "https://httpbin.org/redirect-to?status_code=301&url=https://www.example.com",
+        "https://httpbin.org/redirect-to?status_code=302&url=https://www.example.com"
+      ]
+    },
+    "performance_stress": {
+      "description": "Testing various performance scenarios",
+      "urls": [
+        "https://httpbin.org/delay/1",
+        "https://httpbin.org/delay/3",
+        "https://httpbin.org/delay/5",
+        "https://httpbin.org/delay/7",
+        "https://httpbin.org/drip?duration=3&numbytes=100",
+        "https://httpbin.org/drip?duration=5&numbytes=200",
+        "https://httpstat.us/200?sleep=2000",
+        "https://httpstat.us/200?sleep=5000",
+        "https://httpbin.org/bytes/50000"
+      ]
+    },
+    "security_focused": {
+      "description": "Security-related test cases",
+      "categories": [
+        "authentication_required",
+        "ssl_certificate_issues",
+        "security_headers",
+        "captcha_protected"
+      ]
+    },
+    "encoding_and_content": {
+      "description": "Content type and encoding challenges",
+      "categories": [
+        "content_types",
+        "encoding_challenges",
+        "compression_types"
+      ]
+    },
+    "javascript_spa": {
+      "description": "JavaScript-heavy single page applications",
+      "categories": [
+        "javascript_heavy",
+        "infinite_scroll"
+      ]
+    },
+    "edge_cases": {
+      "description": "Edge cases and unusual scenarios",
+      "categories": [
+        "malformed_urls",
+        "dns_challenges",
+        "edge_case_ports",
+        "websocket_endpoints"
+      ]
+    },
+    "http_status_comprehensive": {
+      "description": "Comprehensive HTTP status code testing",
+      "categories": [
+        "status_codes",
+        "rate_limited",
+        "authentication_required"
+      ]
+    },
+    "internationalization": {
+      "description": "International and multi-language testing",
+      "categories": [
+        "international",
+        "encoding_challenges",
+        "geo_restricted"
+      ]
+    },
+    "api_comprehensive": {
+      "description": "Comprehensive API testing including GraphQL",
+      "categories": [
+        "api_endpoints",
+        "graphql_endpoints",
+        "streaming_content"
+      ]
+    },
+    "user_agent_and_headers": {
+      "description": "Testing header-dependent behavior",
+      "categories": [
+        "user_agent_dependent",
+        "cors_testing",
+        "security_headers"
+      ]
+    },
+    "cookie_and_session": {
+      "description": "Cookie and session management testing",
+      "categories": [
+        "cookie_dependent",
+        "authentication_required"
+      ]
+    },
+    "robustness_suite": {
+      "description": "Complete robustness testing suite",
+      "categories": [
+        "malformed_urls",
+        "ssl_certificate_issues",
+        "dns_challenges",
+        "edge_case_ports",
+        "websocket_endpoints",
+        "status_codes",
+        "slow_sites",
+        "heavy_content"
+      ]
+    }
+  }
+}

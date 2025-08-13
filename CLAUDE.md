@@ -137,7 +137,7 @@ Key configuration areas:
 
 ## Development Notes
 
-- Use `make lint-all` before committing changes to ensure code quality
 - The application supports both local LLM servers (via vLLM) and remote OpenAI-compatible APIs
 - RAG indexing happens automatically on file upload and URL detection
 - Vector embeddings are cached locally in the Qdrant storage directory
+- Always check code quality after coding changes via code-quality agent.

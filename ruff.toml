@@ -1,19 +1,19 @@
 extend-include = ["*.ipynb"]
-line-length = 140
+line-length = 120
 include = [
     "chatbot/**/*.py",
     "tests/**/*.py",
     "pyproject.toml",
+    "scripts/**/*.py",
 ]
 exclude = [
     "docs/*",
-    "scripts/*"
 ]
+src = ["chatbot", "tests"]
 
 [lint]
 ignore = [
     'D100',  # Missing docstring in public module
-    'D102',  # Missing docstring in public method
     'D104',  # Missing docstring in public package
     'D105',  # Missing docstring in magic method
     'D107',  # Missing docstring in __init__
@@ -34,10 +34,7 @@ select = [
     'B',  # Bugbear finding likely bugs and design problems in your program
     'C4',  # flake8-comprehensions
     'D',  # pydocstyle
-    'D400',  # pydocstyle First line should end with a period. Not part of deafult D checks for google style.
-    # 'D401', # First line should be in imperative mood.  Not part of deafult D checks for google style.
-    'D404',  # First word of the docstring should not be This.  Not part of deafult D checks for google style.
-    'D406',  # Section name should end with a newline.  Not part of deafult D checks for google style.
+    'DOC', #pydoclint
     'E',  # pycodestyle Error
     'ERA',  # eradicate
     'F',  # Pyflakes
@@ -58,6 +55,7 @@ select = [
     'UP',  # Pyupgrade macros
     'W',  # pycodestyle warning
 ]
+preview = true
 
 [lint.flake8-builtins]
 builtins-ignorelist = ["input"]
@@ -92,13 +90,12 @@ ignore-names = [
     "F401",  # Import imported into __init__ by unused; consider adding to `__all__` or using a redundant alias
     "F403",  # `from foo import *` used; unable to detect undefined names
 ]
-"tests/*.py" = [
-    "D101",  # Missing docstring in public class
-    "D106",  # Missing docstring in public nested class
-]
 
 [lint.pydocstyle]
 convention = "google"
+
+[lint.pydoclint]
+ignore-one-line-docstrings = false
 
 # Enforce module/package level imports only (no individual class/function imports)
 [lint.flake8-import-conventions]

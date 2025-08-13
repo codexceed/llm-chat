@@ -1,3 +1,5 @@
+"""Shared or re-usable resources for the chatbot application."""
+
 import streamlit as st
 
 from chatbot import rag

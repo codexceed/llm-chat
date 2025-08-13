@@ -1,3 +1,5 @@
+"""Main entry point for the chatbot application."""
+
 import asyncio
 import copy
 
@@ -37,7 +39,11 @@ def initialize_session_state() -> None:
 
 
 def main() -> None:
-    """Main function for the Streamlit chatbot app."""
+    """Main function for the Streamlit chatbot app.
+
+    Raises:
+        TypeError: If an error occurs during the processing of the request.
+    """
     st.logo("assets/rand_logo.jpg")
     st.set_page_config(layout="wide")
     ui.render_sidebar()
@@ -60,7 +66,9 @@ def main() -> None:
                 with st.spinner("Retrieving additional context..."):
                     asyncio.run(RAG_PROCESSOR.process_web_urls(prompt, st.session_state.http_client))
                     if uploaded_files:
-                        LOGGER.debug("Processing uploaded files:\n-%s", "- ".join([file.name for file in uploaded_files]))
+                        LOGGER.debug(
+                            "Processing uploaded files:\n-%s", "- ".join([file.name for file in uploaded_files])
+                        )
                         RAG_PROCESSOR.process_uploaded_files(uploaded_files)
                     rag_context_chunks = RAG_PROCESSOR.retrieve(prompt)
                     if rag_context_chunks:
@@ -79,7 +87,7 @@ def main() -> None:
             if isinstance(response, str):
                 st.session_state.messages.append(constants.Message(role="assistant", content=response))
             else:
-                raise TypeError("Expected response to be str, got %s", type(response).__name__)
+                raise TypeError(f"Expected response to be str, got {type(response).__name__}")
 
 
 if __name__ == "__main__":
