@@ -157,13 +157,13 @@ class RAG:
             prompt: User input containing potential web URLs.
             client: HTTP client for making requests to fetch URL content.
         """
-        urls, web_docs_content = await web.lookup_http_urls_in_prompt(prompt, client)
+        urls, web_docs_content = await web.fetch_from_http_urls_in_prompt(prompt, client)
         if not web_docs_content:
             return
 
         # Create documents with URL metadata for better tracking
         documents: list[core.Document] = []
-        for url, content in zip(urls, web_docs_content, strict=False):
+        for url, content in zip(urls, web_docs_content, strict=True):
             if content:
                 LOGGER.debug("Processing web URL: %s", url)
                 LOGGER.debug("Content: %s", content[:100])

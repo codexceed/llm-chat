@@ -1,6 +1,6 @@
 import json
 import random
-from typing import Any, Final
+from typing import Any
 
 import httpx
 import hypothesis
@@ -12,21 +12,8 @@ from openai.types import chat as chat_types
 
 from chatbot import settings
 from chatbot.utils import chat
+from tests import conftest
 from tests.unit import utils as test_utils
-
-TEST_SERVER_BASE_URL: Final[str] = "http://testserver/v1"
-TEST_SERVER_CHAT_COMPLETIONS_URL: Final[str] = TEST_SERVER_BASE_URL + "/chat/completions"
-TEST_API_KEY: Final[str] = "test-key"
-
-
-@pytest.fixture(scope="module")
-def openai_client() -> openai.OpenAI:
-    """Fixture for OpenAI client.
-
-    Returns:
-        An OpenAI client instance.
-    """
-    return openai.OpenAI(base_url=TEST_SERVER_BASE_URL, api_key=TEST_API_KEY)
 
 
 @hypothesis.given(
@@ -69,7 +56,7 @@ def test_stream_response_valid_messages(
             stream=pytest_httpx.IteratorStream([chunk.encode("utf-8") for chunk in expected_chunks]),
         )
 
-    httpx_mock.add_callback(callback, method="POST", url=TEST_SERVER_CHAT_COMPLETIONS_URL)
+    httpx_mock.add_callback(callback, method="POST", url=conftest.TEST_SERVER_CHAT_COMPLETIONS_URL)
 
     # Validate chunks from the stream
     idx = 0
@@ -80,7 +67,7 @@ def test_stream_response_valid_messages(
     assert captured_request["method"] == "POST"
     headers = captured_request["headers"]
     assert "authorization" in headers
-    assert headers["authorization"] == f"Bearer {TEST_API_KEY}"
+    assert headers["authorization"] == f"Bearer {conftest.TEST_API_KEY}"
 
     # Validate the request payload structure
     payload = captured_request["content"]
@@ -209,7 +196,7 @@ def test_stream_response_uses_chat_settings(
             stream=pytest_httpx.IteratorStream([chunk.encode("utf-8") for chunk in expected_chunks]),
         )
 
-    httpx_mock.add_callback(callback, method="POST", url=TEST_SERVER_CHAT_COMPLETIONS_URL)
+    httpx_mock.add_callback(callback, method="POST", url=conftest.TEST_SERVER_CHAT_COMPLETIONS_URL)
 
     # Execute the stream_response function
     list(chat.stream_response(messages, openai_client))

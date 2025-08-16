@@ -5,6 +5,7 @@ from collections.abc import Sequence
 
 import httpx
 import tenacity
+import trafilatura
 from streamlit import logger
 
 LOGGER = logger.get_logger(__name__)
@@ -25,7 +26,7 @@ def extract_urls_from_text(text: str) -> list[str]:
     """
     urls = URL_REGEX.findall(text)
     unique_urls = list(set(urls))
-    LOGGER.info("Extracted URLs from prompt:\n-%s", "\n-".join(unique_urls))
+    LOGGER.info("Extracted URLs from prompt:\n- %s", "\n- ".join(unique_urls))
     return unique_urls
 
 
@@ -94,15 +95,13 @@ async def fetch_content_from_urls(urls: Sequence[str], client: httpx.AsyncClient
     Returns:
         List of response text from the URLs
     """
-    LOGGER.info("Fetching content from URLs")
+    LOGGER.info("Fetching content from URLs:\n- %s", "\n- ".join(urls))
     tasks = [_fetch_url(url, client) for url in urls]
-    responses = await asyncio.gather(*tasks)
-
-    return [response for response in responses if response]
+    return await asyncio.gather(*tasks)
 
 
-async def lookup_http_urls_in_prompt(prompt: str, client: httpx.AsyncClient) -> tuple[list[str], list[str]]:
-    """Look up HTTP URLs in a prompt and fetch their content.
+async def fetch_from_http_urls_in_prompt(prompt: str, client: httpx.AsyncClient) -> tuple[list[str], list[str]]:
+    """Fetch content from HTTP URLs in a prompt and fetch their content.
 
     Args:
         prompt: User input containing potential web URLs
@@ -115,8 +114,72 @@ async def lookup_http_urls_in_prompt(prompt: str, client: httpx.AsyncClient) -> 
     if not urls:
         return [], []
 
-    LOGGER.debug("Looking up URLs in prompt:\n-%s", "- ".join(urls))
-
     docs = await fetch_content_from_urls(urls, client)
 
     return urls, docs
+
+
+def sanitize_web_content(raw_contents: list[str]) -> list[str | None]:
+    """Extract web content as clean text.
+
+    Args:
+       raw_contents: List of raw web page contents.
+
+    Returns:
+        Sanitized web content.
+    """
+    sanitized_contents = []
+    for raw_content in raw_contents:
+        if raw_content and (extracted := trafilatura.extract(raw_content)):
+            sanitized_contents.append(extracted)
+        else:
+            sanitized_contents.append(None)
+
+    return sanitized_contents
+
+
+async def fetch_sanitized_web_content_from_urls(urls: Sequence[str], client: httpx.AsyncClient) -> list[str | None]:
+    """Fetch and sanitize content from URLs.
+
+    Args:
+        urls: List of URLs to fetch
+        client: HTTP client for making requests
+
+    Returns:
+        List of sanitized text content from URLs
+    """
+    if not urls:
+        return []
+
+    LOGGER.info("Fetching and sanitizing content from %d URLs", len(urls))
+
+    # Fetch raw content first
+    raw_contents = await fetch_content_from_urls(urls, client)
+
+    return sanitize_web_content(raw_contents)
+
+
+async def fetch_sanitized_web_content_from_http_urls_in_prompt(prompt: str, client: httpx.AsyncClient) -> str:
+    """Extract URLs from prompt and fetch their sanitized content.
+
+    Args:
+        prompt: User input containing potential URLs
+        client: HTTP client for making requests
+
+    Returns:
+        Concatenated sanitized content from all URLs found in prompt
+    """
+    urls, raw_web_pages = await fetch_from_http_urls_in_prompt(prompt, client)
+
+    sanitized_contents = sanitize_web_content(raw_web_pages)
+
+    if not sanitized_contents:
+        return ""
+
+    # Combine all content with URL headers
+    combined_content = []
+    for url, content in zip(urls, sanitized_contents, strict=True):
+        if content:
+            combined_content.append(f"Content from {url}:\n{content}")
+
+    return "\n\n".join(combined_content)

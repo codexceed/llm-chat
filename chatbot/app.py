@@ -8,7 +8,7 @@ import openai
 import streamlit as st
 from streamlit import logger
 
-from chatbot import constants, resources, settings
+from chatbot import constants, resources, search, settings, web_context
 from chatbot.utils import chat, ui
 
 LOGGER = logger.get_logger(__name__)
@@ -36,6 +36,15 @@ def initialize_session_state() -> None:
             api_key=settings.CHATBOT_SETTINGS.openai_api_key,
             base_url=settings.CHATBOT_SETTINGS.openai_api_base,
         )
+    if "search_manager" not in st.session_state and settings.CHATBOT_SETTINGS.search.enabled:
+        st.session_state.search_manager = search.SearchManager(
+            provider=search.SearchProvider(settings.CHATBOT_SETTINGS.search.provider),
+            api_key=settings.CHATBOT_SETTINGS.search.api_key,
+            trigger_words=settings.CHATBOT_SETTINGS.search.trigger_words,
+            search_engine_id=settings.CHATBOT_SETTINGS.search.search_id,
+        )
+    if "web_context_pipeline" not in st.session_state:
+        st.session_state.web_context_pipeline = web_context.WebContextPipeline(st.session_state.get("search_manager"))
 
 
 def main() -> None:
@@ -47,6 +56,7 @@ def main() -> None:
     st.logo("assets/rand_logo.jpg")
     st.set_page_config(layout="wide")
     ui.render_sidebar()
+    web_context_pipeline: web_context.WebContextPipeline = st.session_state.web_context_pipeline
 
     if chat_input := ui.render_chat_interface():
         prompt, uploaded_files = chat_input.text, chat_input.files
@@ -59,25 +69,45 @@ def main() -> None:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-            # If RAG is enabled, retrieve additional context
-            if settings.CHATBOT_SETTINGS.rag.enabled:
-                LOGGER.info("Initiating RAG processing.")
-                context_text = ""
-                with st.spinner("Retrieving additional context..."):
-                    asyncio.run(RAG_PROCESSOR.process_web_urls(prompt, st.session_state.http_client))
+            # Initialize context components
+            context_text = ""
+            rag_context = ""
+
+            with st.spinner("Retrieving additional context..."):
+                # Always get web context (independent of RAG)
+                LOGGER.info("Gathering web context.")
+                web_context_dict = asyncio.run(
+                    web_context_pipeline.gather_web_context(
+                        prompt,
+                        st.session_state.http_client,
+                        enable_search=settings.CHATBOT_SETTINGS.search.enabled,
+                        search_num_results=settings.CHATBOT_SETTINGS.search.num_results,
+                    )
+                )
+
+                # If RAG is enabled, retrieve RAG context
+                if settings.CHATBOT_SETTINGS.rag.enabled:
+                    LOGGER.info("Gathering RAG context.")
+                    # Process files through RAG system (if any)
                     if uploaded_files:
                         LOGGER.debug(
                             "Processing uploaded files:\n-%s", "- ".join([file.name for file in uploaded_files])
                         )
                         RAG_PROCESSOR.process_uploaded_files(uploaded_files)
+
+                    # Get RAG context from vector database
                     rag_context_chunks = RAG_PROCESSOR.retrieve(prompt)
-                    if rag_context_chunks:
-                        context_text = "\n\n".join(rag_context_chunks)
+                    rag_context = "\n\n".join(rag_context_chunks) if rag_context_chunks else ""
 
-                if context_text:
-                    with st.expander("Relevant Context", expanded=False):
-                        st.text(context_text[: settings.CHATBOT_SETTINGS.context_view_size] + "...")
+                # Merge all context sources (web + RAG)
+                context_text = web_context_pipeline.merge_context(web_context_dict, rag_context)
 
+            if context_text:
+                with st.expander("Relevant Context", expanded=False):
+                    st.text(context_text[: settings.CHATBOT_SETTINGS.context_view_size] + "...")
+
+            # Apply context to prompt if any context was gathered
+            if context_text:
                 contextualized_prompt = PROMPT_TEMPLATE.format(context=context_text, prompt=prompt)
                 contextualized_messages[-1]["content"] = contextualized_prompt
 

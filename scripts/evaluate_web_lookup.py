@@ -49,7 +49,7 @@ def load_test_urls(config_file: str = "test_urls.json", test_set: str = "default
     """
     config_path = pathlib.Path(__file__).parent / config_file
 
-    with open(config_path) as f:
+    with open(config_path, encoding="utf-8") as f:
         config = json.load(f)
 
     test_sets = config.get("test_sets", {})
@@ -79,6 +79,12 @@ class WebLookupEvaluator:
     """Evaluates the reliability of web URL lookup functionality."""
 
     def __init__(self, timeout: float = 10.0, test_urls: list[str] | None = None):
+        """Initialize the WebLookupEvaluator.
+
+        Args:
+            timeout: Maximum time to wait for HTTP requests
+            test_urls: List of URLs to test, defaults to loading from config
+        """
         self.timeout = timeout
         self.test_urls = test_urls or load_test_urls()
 
@@ -103,7 +109,7 @@ class WebLookupEvaluator:
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                _urls, contents = await chatbot.utils.web.lookup_http_urls_in_prompt(prompt, client)
+                _urls, contents = await chatbot.utils.web.fetch_from_http_urls_in_prompt(prompt, client)
 
                 success = len(contents) > 0
                 content_length = sum(len(content) for content in contents)
@@ -116,7 +122,7 @@ class WebLookupEvaluator:
             error_type = "ConnectError"
         except httpx.HTTPStatusError as e:
             error_type = f"HTTPStatusError_{e.response.status_code}"
-        except Exception as e:
+        except (ValueError, RuntimeError, OSError) as e:
             error_type = f"Other_{type(e).__name__}"
 
         end_time = time.time()
@@ -193,7 +199,11 @@ class WebLookupEvaluator:
         )
 
     def print_results(self, results: EvaluationResult) -> None:
-        """Print formatted evaluation results."""
+        """Print formatted evaluation results.
+
+        Args:
+            results: Evaluation results to print
+        """
         print("\n" + "=" * 60)
         print("WEB LOOKUP RELIABILITY EVALUATION RESULTS")
         print("=" * 60)
@@ -229,7 +239,7 @@ class WebLookupEvaluator:
 
 async def main() -> None:
     """Main evaluation function."""
-    import sys
+    import sys  # pylint: disable=import-outside-toplevel
 
     # Allow command line argument to select URL set
     url_set = "default"

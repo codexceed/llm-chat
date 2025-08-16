@@ -488,7 +488,7 @@ async def test_async_web_processing_integration() -> None:
     """Test async web processing integration."""
     import httpx
 
-    from chatbot.utils.web import lookup_http_urls_in_prompt
+    from chatbot.utils.web import fetch_from_http_urls_in_prompt
 
     # Mock HTTP client
     mock_client = AsyncMock(spec=httpx.AsyncClient)
@@ -498,7 +498,7 @@ async def test_async_web_processing_integration() -> None:
     mock_client.get.return_value = mock_response
 
     # Test URL lookup
-    urls, content = await lookup_http_urls_in_prompt("Check out https://example.com", mock_client)
+    urls, content = await fetch_from_http_urls_in_prompt("Check out https://example.com", mock_client)
 
     assert "https://example.com" in urls
     assert "Test web content" in content
