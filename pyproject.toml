@@ -9,74 +9,69 @@ description = "A chatbot application that leverages LLMs served via OpenAI spec 
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
 authors = [
-    { name = "Sarthak Joshi", email = "sarthak.joshi94@yahoo.in" },
+  {name = "Sarthak Joshi", email = "sarthak.joshi94@yahoo.in"}
 ]
-license = { text = "MIT" }
+license = {text = "MIT"}
 keywords = ["chatbot", "streamlit", "ai"]
 dependencies = [
-    "streamlit~=1.48.0",
-    "pydantic-settings~=2.10.1",
-    "openai~=1.99.6",
-    "llama-index~=0.13.0",
-    "llama-index-vector-stores-qdrant~=0.7.1",
-    "llama-index-embeddings-openai~=0.5.0",
-    "llama-index-embeddings-huggingface~=0.6.0",
-    "qdrant-client~=1.15.1",
-    "tree-sitter~=0.25.0",
-    "tree-sitter-c-sharp~=0.23.1",
-    "tree-sitter-embedded-template~=0.23.2",
-    "tree-sitter-language-pack~=0.9.0",
-    "tree-sitter-yaml~=0.7.1",
-    "fastembed~=0.7.1",
-    "numpy~=2.2.6",
-    "tenacity~=9.1.2",
-    "httpx~=0.28.1",
-    "trafilatura~=1.12.2",
+  "streamlit~=1.48.0",
+  "pydantic-settings~=2.10.1",
+  "openai~=1.99.6",
+  "llama-index~=0.13.0",
+  "llama-index-vector-stores-qdrant~=0.7.1",
+  "llama-index-embeddings-openai~=0.5.0",
+  "llama-index-embeddings-huggingface~=0.6.0",
+  "qdrant-client~=1.15.1",
+  "tree-sitter~=0.25.0",
+  "tree-sitter-c-sharp~=0.23.1",
+  "tree-sitter-embedded-template~=0.23.2",
+  "tree-sitter-language-pack~=0.9.0",
+  "tree-sitter-yaml~=0.7.1",
+  "fastembed~=0.7.1",
+  "numpy~=2.2.6",
+  "tenacity~=9.1.2",
+  "httpx~=0.28.1",
+  "trafilatura~=1.12.2"
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest~=8.4.1",
-    "pytest-mock~=3.14.1",
-    "pytest-cov~=6.2.1",
-    "pytest-asyncio~=0.24.0",
-    "pytest-httpx~=0.35.0",
-    "hypothesis~=6.120.0",
-    "pyright~=1.1.403",
-    "ruff~=0.12.2",
-    "mypy~=1.17.1",
-    "pylint==3.3.7",
-    "pylint_google_style_guide_imports_enforcing==1.3.1",
-    "bandit~=1.8.6",
-    "gibberish-detector~=0.1.1",
+  "pytest~=8.4.1",
+  "pytest-mock~=3.14.1",
+  "pytest-cov~=6.2.1",
+  "pytest-asyncio~=0.24.0",
+  "pytest-httpx~=0.35.0",
+  "hypothesis~=6.120.0",
+  "pyright~=1.1.403",
+  "ruff~=0.12.2",
+  "mypy~=1.17.1",
+  "pylint==3.3.7",
+  "pylint_google_style_guide_imports_enforcing==1.3.1",
+  "bandit~=1.8.6",
+  "gibberish-detector~=0.1.1"
 ]
 profiling = [
-    "matplotlib>=3.7.0",
-    "plotly>=5.15.0",
-    "pandas>=2.0.0",
-    "psutil>=5.9.0",
-    "py-spy>=0.3.14",
-    "flameprof>=0.4.0",
+  "matplotlib>=3.7.0",
+  "plotly>=5.15.0",
+  "pandas>=2.0.0",
+  "psutil>=5.9.0",
+  "py-spy>=0.3.14",
+  "flameprof>=0.4.0"
 ]
 all = [
-    "llm-chat[dev,profiling]",
+  "llm-chat[dev,profiling]"
 ]
 
 [project.scripts]
 chatbot = "chatbot.cli:main"
 
-[tool.setuptools]
-packages = ["chatbot"]
+[tool.bandit]
+exclude_dirs = ["scripts", "dev"]
+skips = ["B101", "B110", "B311", "B404", "B603"]
+severity = "medium"
 
 [tool.isort]
 src_paths = ["chatbot"]
-
-[tool.pytest.ini_options]
-minversion = "8.4.1"
-addopts = "-ra -q --cov"
-testpaths = [
-    "tests",
-]
 
 [tool.pyright]
 pythonVersion = "3.10"
@@ -89,7 +84,12 @@ reportUnknownArgumentType = true
 reportPrivateUsage = "warning"
 reportUntypedFunctionDecorator = "warning"
 
-[tool.bandit]
-exclude_dirs = ["scripts", "dev"]
-skips = ["B101", "B110", "B311", "B404", "B603"]
-severity = "medium"
+[tool.pytest.ini_options]
+minversion = "8.4.1"
+addopts = "-ra -q --cov"
+testpaths = [
+  "tests"
+]
+
+[tool.setuptools]
+packages = ["chatbot"]

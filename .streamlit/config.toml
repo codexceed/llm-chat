@@ -11,4 +11,4 @@ showWarningOnDirectExecution = true
 base = "dark"
 
 [server]
-fileWatcherType = "none"
+fileWatcherType = "auto"

@@ -69,33 +69,34 @@ class WebContextPipeline:
         return "\n".join(search_context_parts)
 
     async def gather_web_context(
-        self, prompt: str, client: httpx.AsyncClient, enable_search: bool = True, search_num_results: int = 5
+        self,
+        prompt: str,
+        client: httpx.AsyncClient,
+        enable_web_search: bool = True,
+        force_web_search: bool = False,
+        search_num_results: int = 5,
     ) -> dict[str, str]:
         """Gather all web context asynchronously.
 
         Args:
             prompt: User query/prompt
             client: HTTP client for making requests
-            enable_search: Whether to perform web search
+            enable_web_search: Whether to perform web search
+            force_web_search: Force web search the prompt.
             search_num_results: Number of search results to fetch
 
         Returns:
             Dictionary containing different types of web context
         """
         LOGGER.info("Gathering web context for prompt")
-
-        # Prepare async tasks
         tasks = []
         task_names = []
 
-        # Always fetch URLs from prompt
         tasks.append(web.fetch_sanitized_web_content_from_http_urls_in_prompt(prompt, client))
         task_names.append("prompt_urls")
 
-        # Optionally perform web search
-        if enable_search and self._search_manager:
-            # Check if search should be triggered based on query
-            if self._search_manager.should_trigger_search(prompt):
+        if enable_web_search and self._search_manager:
+            if force_web_search or self._search_manager.should_trigger_search(prompt):
                 tasks.append(self.web_search_and_fetch(prompt, client, search_num_results))
                 task_names.append("web_search")
             else:

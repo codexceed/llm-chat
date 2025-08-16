@@ -45,9 +45,11 @@ def initialize_session_state() -> None:
         )
     if "web_context_pipeline" not in st.session_state:
         st.session_state.web_context_pipeline = web_context.WebContextPipeline(st.session_state.get("search_manager"))
+    if "force_web_search" not in st.session_state:
+        st.session_state.force_web_search = False
 
 
-def main() -> None:
+async def main() -> None:
     """Main function for the Streamlit chatbot app.
 
     Raises:
@@ -76,13 +78,13 @@ def main() -> None:
             with st.spinner("Retrieving additional context..."):
                 # Always get web context (independent of RAG)
                 LOGGER.info("Gathering web context.")
-                web_context_dict = asyncio.run(
-                    web_context_pipeline.gather_web_context(
-                        prompt,
-                        st.session_state.http_client,
-                        enable_search=settings.CHATBOT_SETTINGS.search.enabled,
-                        search_num_results=settings.CHATBOT_SETTINGS.search.num_results,
-                    )
+
+                web_context_dict = await web_context_pipeline.gather_web_context(
+                    prompt,
+                    st.session_state.http_client,
+                    enable_web_search=settings.CHATBOT_SETTINGS.search.enabled,
+                    force_web_search=st.session_state.force_web_search,
+                    search_num_results=settings.CHATBOT_SETTINGS.search.num_results,
                 )
 
                 # If RAG is enabled, retrieve RAG context
@@ -122,4 +124,10 @@ def main() -> None:
 
 if __name__ == "__main__":
     initialize_session_state()
-    main()
+    try:
+        loop = asyncio.get_running_loop()
+        loop.run_until_complete(main())
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(main())
