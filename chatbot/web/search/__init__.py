@@ -1,6 +1,6 @@
 """Search module for web search integration with RAG system."""
 
-from chatbot.search import base, brave, google, manager
+from chatbot.web.search import base, brave, google, manager
 
 SearchAPIError = base.SearchAPIError
 SearchClient = base.SearchClient

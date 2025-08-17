@@ -7,7 +7,7 @@ import httpx
 import tenacity
 from streamlit import logger
 
-from chatbot.search import base
+from chatbot.web.search import base
 
 LOGGER = logger.get_logger(__name__)
 

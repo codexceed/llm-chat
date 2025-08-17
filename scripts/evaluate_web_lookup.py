@@ -15,7 +15,7 @@ from typing import Any
 
 import httpx
 
-import chatbot.utils.web
+import chatbot.web.http
 
 # ruff: noqa: T201
 
@@ -109,7 +109,7 @@ class WebLookupEvaluator:
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                _urls, contents = await chatbot.utils.web.fetch_from_http_urls_in_prompt(prompt, client)
+                _urls, contents = await chatbot.web.http.fetch_from_http_urls_in_prompt(prompt, client)
 
                 success = len(contents) > 0
                 content_length = sum(len(content) for content in contents)

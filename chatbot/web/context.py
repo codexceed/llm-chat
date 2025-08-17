@@ -5,8 +5,8 @@ import asyncio
 import httpx
 from streamlit import logger
 
-from chatbot import search, settings
-from chatbot.utils import web
+from chatbot import settings
+from chatbot.web import http, search
 
 LOGGER = logger.get_logger(__name__)
 
@@ -48,7 +48,7 @@ class WebContextPipeline:
         LOGGER.info("Found %d search result URLs to fetch", len(result_urls))
 
         # Compile search result string context
-        url_contents = await web.fetch_sanitized_web_content_from_urls(result_urls, client)
+        url_contents = await http.fetch_sanitized_web_content_from_urls(result_urls, client)
         search_context_parts = []
         search_summary = "Search Results:\n"
         for i, result in enumerate(search_results, 1):
@@ -92,7 +92,7 @@ class WebContextPipeline:
         tasks = []
         task_names = []
 
-        tasks.append(web.fetch_sanitized_web_content_from_http_urls_in_prompt(prompt, client))
+        tasks.append(http.fetch_sanitized_web_content_from_http_urls_in_prompt(prompt, client))
         task_names.append("prompt_urls")
 
         if enable_web_search and self._search_manager:

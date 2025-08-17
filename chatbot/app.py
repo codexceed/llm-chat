@@ -8,8 +8,9 @@ import openai
 import streamlit as st
 from streamlit import logger
 
-from chatbot import constants, resources, search, settings, web_context
+from chatbot import constants, resources, settings
 from chatbot.utils import chat, ui
+from chatbot.web import context, search
 
 LOGGER = logger.get_logger(__name__)
 RAG_PROCESSOR = resources.get_rag_processor()
@@ -44,7 +45,7 @@ def initialize_session_state() -> None:
             search_engine_id=settings.CHATBOT_SETTINGS.search.search_id,
         )
     if "web_context_pipeline" not in st.session_state:
-        st.session_state.web_context_pipeline = web_context.WebContextPipeline(st.session_state.get("search_manager"))
+        st.session_state.web_context_pipeline = context.WebContextPipeline(st.session_state.get("search_manager"))
     if "force_web_search" not in st.session_state:
         st.session_state.force_web_search = False
 
@@ -58,7 +59,7 @@ async def main() -> None:
     st.logo("assets/rand_logo.jpg")
     st.set_page_config(layout="wide")
     ui.render_sidebar()
-    web_context_pipeline: web_context.WebContextPipeline = st.session_state.web_context_pipeline
+    web_context_pipeline: context.WebContextPipeline = st.session_state.web_context_pipeline
 
     if chat_input := ui.render_chat_interface():
         prompt, uploaded_files = chat_input.text, chat_input.files

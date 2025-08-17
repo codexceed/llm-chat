@@ -8,7 +8,7 @@ import tenacity
 from googleapiclient import discovery, errors as google_errors
 from streamlit import logger
 
-from chatbot.search import base
+from chatbot.web.search import base
 
 LOGGER = logger.get_logger(__name__)
 

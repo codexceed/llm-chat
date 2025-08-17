@@ -17,7 +17,7 @@ from streamlit import logger
 from streamlit.runtime import uploaded_file_manager
 
 from chatbot import constants, settings
-from chatbot.utils import web
+from chatbot.web import http
 
 LOGGER = logger.get_logger(__name__)
 
@@ -157,7 +157,7 @@ class RAG:
             prompt: User input containing potential web URLs.
             client: HTTP client for making requests to fetch URL content.
         """
-        urls, web_docs_content = await web.fetch_from_http_urls_in_prompt(prompt, client)
+        urls, web_docs_content = await http.fetch_from_http_urls_in_prompt(prompt, client)
         if not web_docs_content:
             return
 

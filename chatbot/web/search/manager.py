@@ -5,7 +5,7 @@ from typing import Any, Final
 
 from streamlit import logger
 
-from chatbot.search import base, brave, google
+from chatbot.web.search import base, brave, google
 
 LOGGER = logger.get_logger(__name__)
 
