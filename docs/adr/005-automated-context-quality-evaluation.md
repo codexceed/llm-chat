@@ -1,4 +1,4 @@
-# ADR-004: Automated Context Quality Evaluation
+# ADR-005: Automated Context Quality Evaluation
 
 **Date:** 2025-08-17  
 **Status:** Proposed  

@@ -1,4 +1,4 @@
-# ADR-003: Cross-Source Re-ranking System
+# ADR-007: Cross-Source Re-ranking System
 
 **Date:** 2025-08-17  
 **Status:** Proposed  

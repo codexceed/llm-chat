@@ -1,4 +1,4 @@
-# ADR-002: Web-Based Context Independence from RAG System
+# ADR-006: Web-Based Context Independence from RAG System
 
 **Status:** Accepted  
 **Date:** 2025-08-15  
