@@ -3,7 +3,7 @@
 
 This script shows the practical differences between:
 1. Dense-only retrieval (semantic similarity via embeddings)
-2. Hybrid retrieval (dense + BM42 sparse embeddings)
+2. Hybrid retrieval (dense + BM25 sparse embeddings)
 
 The script will:
 - Create sample documents with different characteristics
@@ -146,7 +146,6 @@ class RetrievalComparer:
         # Dense-only vector store
         dense_vector_store = qdrant_vector_store.QdrantVectorStore(client=self.client, collection_name="dense_test")
 
-        # Hybrid vector store with BM42 sparse model
         hybrid_vector_store = qdrant_vector_store.QdrantVectorStore(
             client=self.client,
             collection_name="hybrid_test",

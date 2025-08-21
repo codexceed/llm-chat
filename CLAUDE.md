@@ -8,15 +8,16 @@ This is a learning project meant to help the developer understand the state-of-t
 
 ### Setup and Installation
 ```bash
-pip install -e .              # Install package in development mode
+make install-all              # Install all dependencies in development mode
 make install-dev              # Install with development dependencies (uses uv)
-make dev                      # Complete development environment setup
+make install-based            # Install base dependencies necessary to run the chatbot
 make install-uv               # Install uv package manager (if needed)
 ```
 
 ### Code Quality and Linting
 ```bash
 make lint-all                 # Run all linters and formatting (recommended)
+make lint-fast                # Run fast running linters and formatters
 make format                   # Format code with ruff
 make lint                     # Check with ruff linter
 make lint-fix                 # Auto-fix linting issues
@@ -38,15 +39,6 @@ python -m pytest tests/ -v   # Direct pytest command
 chatbot                       # Start the Streamlit chatbot application
 ```
 
-### Profiling
-```bash
-make profile-install          # Install profiling dependencies (with uv)
-make profile-interactive      # Run interactive profiling with Streamlit
-make profile-batch            # Run batch profiling tests
-make profile-compare          # Compare profiling sessions
-make profile-clean            # Clean profiling output
-```
-
 ### Docker Services
 ```bash
 # Start local LLM servers
@@ -63,42 +55,47 @@ This is a modern chatbot application built with Streamlit that integrates Large 
 
 ### Core Components
 
-- **`chatbot/app.py`** - Main Streamlit application entry point
+- **`chatbot/app.py`** - Main Streamlit application with integrated web context pipeline
 - **`chatbot/utils/chat.py`** - Core chat logic and LLM interaction with streaming responses
-- **`chatbot/rag.py`** - RAG system with Qdrant vector store and adaptive document parsing
+- **`chatbot/rag.py`** - RAG system with Qdrant vector store, hybrid retrieval, and adaptive parsing
 - **`chatbot/utils/ui.py`** - Streamlit UI components and interface rendering
 - **`chatbot/settings.py`** - Centralized configuration management using Pydantic settings
 - **`chatbot/constants.py`** - Type definitions and file type mappings for RAG processing
 - **`chatbot/cli.py`** - Command-line interface entry point
-- **`chatbot/utils/web.py`** - Web content processing and URL handling
+- **`chatbot/web/`** - Web processing module with search integration and URL handling
+  - **`http.py`** - HTTP client utilities with retry logic and content sanitization
+  - **`context.py`** - Web context pipeline for unified web content processing
+  - **`search/`** - Search API integrations (Google Custom Search, Brave Search)
 - **`chatbot/resources.py`** - Resource management and initialization
 
 ### Key Architecture Patterns
 
 **RAG System Architecture:**
-- Uses LlamaIndex framework for document processing and indexing
-- Qdrant vector database for similarity search
+- LlamaIndex framework for document processing and indexing
+- Qdrant vector database with hybrid retrieval (dense + Qdrant/bm25 sparse embeddings)
 - Adaptive parsing strategy based on file types (code, markdown, HTML, text)
-- Supports URL extraction and web content processing
-- Intelligent chunk deduplication using cosine similarity
+- Intelligent chunk deduplication using vectorized cosine similarity
 - Language-specific code parsing with Tree-sitter integration
+
+**Web Context Pipeline:**
+- Independent web content processing separate from RAG system
+- Search API integration (Google Custom Search, Brave Search) with automatic triggering
+- Concurrent URL fetching with retry logic and content sanitization
+- Force search capability with manual overrides (`search:` prefix)
+- Unified context merging from multiple sources (search, URLs, RAG)
 
 **Configuration Management:**
 - Environment-based configuration with `.env` file support
-- Nested settings structure (qdrant, rag sub-configurations)
+- Nested settings structure (qdrant, rag, search sub-configurations)
 - Prefix-based environment variables (`CHATBOT_*`)
 
-**Chat Flow:**
+**Enhanced Chat Flow:**
 1. User input processed through Streamlit interface
 2. File uploads automatically indexed into vector store
-3. URLs extracted from messages and web content fetched/indexed asynchronously in background
-4. RAG context retrieved and appended to user queries
-5. Streaming responses from OpenAI-compatible LLM API
-
-**Non-blocking URL Processing:**
-- URLs in user messages are extracted and processed in background threads
-- User receives immediate response while URL content is indexed asynchronously
-- Prevents slow/failed URL fetches from blocking other user sessions
+3. Web context pipeline gathers content from URLs and search APIs concurrently
+4. RAG context retrieved from vector database with hybrid search
+5. All context sources merged and appended to user queries
+6. Streaming responses from OpenAI-compatible LLM API
 
 ### File Processing Strategy
 
@@ -112,12 +109,15 @@ The RAG system uses adaptive parsing based on file extensions:
 ### Dependencies and Integration
 
 - **Streamlit** for web interface
-- **OpenAI client** for LLM API communication
+- **OpenAI client** for LLM API communication  
 - **LlamaIndex** for RAG document processing
-- **Qdrant** for vector storage and similarity search
+- **Qdrant** for vector storage with hybrid search (dense + Qdrant/bm25 sparse)
 - **HuggingFace** embeddings (default: BAAI/bge-small-en-v1.5)
 - **Tree-sitter** for code parsing
 - **Pydantic** for configuration management
+- **httpx** for async HTTP requests with retry logic
+- **trafilatura** for web content extraction and sanitization
+- **Google Custom Search / Brave Search** APIs for web search
 
 ## Configuration
 
@@ -125,8 +125,9 @@ The application uses environment variables for configuration. Copy `.env.example
 
 Key configuration areas:
 - **LLM settings**: API endpoint, model name, temperature, token limits
-- **RAG settings**: Embedding model, chunk size, retrieval parameters
+- **RAG settings**: Embedding model, chunk size, hybrid retrieval, relevance filtering
 - **Qdrant settings**: Database URL, collection name, vector dimensions
+- **Search settings**: Provider (Google/Brave), API keys, trigger words, result limits
 - **Adaptive parsing**: Code chunk sizes, semantic parsing thresholds
 
 ## Storage Structure
@@ -137,7 +138,13 @@ Key configuration areas:
 
 ## Development Notes
 
-- The application supports both local LLM servers (via vLLM) and remote OpenAI-compatible APIs
-- RAG indexing happens automatically on file upload and URL detection
-- Vector embeddings are cached locally in the Qdrant storage directory
-- Always check code quality after coding changes via `code-quality` agent
+- Always check code quality using `code-quality` agent after performing code changes
+- Think critically and deeply before you respond to:
+  - Queries about major feature updates (consider design implications for scale, maintainability, effort)
+  - Discussions about performance optimization
+  - Discussions about code refactoring
+- When writing tests:
+  - Look for any functions or classes in the test scope that are likely to have a large number of test parameters due to their inflated functionality and flag them to the user
+  - Use `pytest` and its test function format
+  - Prefer using `hypothesis` library to generate property-based test cases over hard-coded test cases
+  - Avoid mocking dependencies as much as possible. Consider looking up pre-existing libraries that can effectively mock dependencies.

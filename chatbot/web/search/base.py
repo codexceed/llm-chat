@@ -1,34 +1,40 @@
 """Base classes for search API integration."""
 
 import abc
-import dataclasses
 import urllib.parse
 from typing import Any
 
+import pydantic
 
-@dataclasses.dataclass
-class SearchResult:
+
+class SearchResult(pydantic.BaseModel):
     """Represents a single search result with metadata."""
 
     title: str
     url: str
     snippet: str
     rank: int
-    domain: str
+    domain: str = ""
     published_date: str | None = None
     search_query: str = ""
 
-    def __post_init__(self) -> None:
-        """Extract domain from URL if not provided."""
+    @pydantic.model_validator(mode="after")
+    def extract_domain_from_url(self) -> "SearchResult":
+        """Extract domain from URL if not provided.
+
+        Returns:
+            The SearchResult instance with domain extracted if needed.
+        """
         if not self.domain and self.url:
             parsed = urllib.parse.urlparse(self.url)
             self.domain = parsed.netloc
+        return self
 
 
 class SearchClient(abc.ABC):
     """Abstract base class for search API clients."""
 
-    def __init__(self, api_key: str, **kwargs: dict[str, Any]) -> None:
+    def __init__(self, api_key: str, **kwargs: Any) -> None:
         """Initialize search client with API credentials.
 
         Args:
@@ -40,7 +46,7 @@ class SearchClient(abc.ABC):
             setattr(self, k, v)
 
     @abc.abstractmethod
-    async def search(self, query: str, num_results: int = 10, **kwargs: dict[str, Any]) -> list[SearchResult]:
+    async def search(self, query: str, num_results: int = 10, **kwargs: Any) -> list[SearchResult]:
         """Perform a search query and return results.
 
         Args:

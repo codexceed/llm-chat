@@ -22,7 +22,7 @@ class RAGSettings(pydantic.BaseModel):
 
     # Hybrid retrieval settings
     use_hybrid_retrieval: bool = True
-    sparse_model: str = "Qdrant/bm25"  # BM42 sparse embedding model
+    sparse_model: str = "Qdrant/bm25"  # BM25 sparse embedding model
     hybrid_top_k: int = 100
 
     # Relevance filtering settings
