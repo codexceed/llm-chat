@@ -1,4 +1,4 @@
-# ADR-001: Web URL Fetch Reliability Improvements
+# ADR-004: URL Processing Architecture - Non-blocking Background Processing
 
 **Status:** Accepted  
 **Date:** 2025-08-04  
