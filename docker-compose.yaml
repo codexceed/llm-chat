@@ -13,14 +13,17 @@ services:
       # Debug environment variables for CUDA errors
       - CUDA_LAUNCH_BLOCKING=1
       - TORCH_USE_CUDA_DSA=1
-      
+
+
       # Alternative attention backends (uncomment to try different ones)
       - VLLM_ATTENTION_BACKEND=FLASHINFER
       # - VLLM_ATTENTION_BACKEND=FLASH_ATTN
-      
+
+
       # Logging and debugging
       - VLLM_LOGGING_LEVEL=DEBUG
-      
+
+
     command: [
       "--model", "/models/Qwen/Qwen2.5-Coder-14B-Instruct-AWQ",
       "--served-model-name", "Qwen/Qwen2.5-Coder-14B-Instruct-AWQ",
@@ -35,7 +38,8 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-  
+
+
   vllm-qwen-2.5-coder-7b-instruct-awq:
     image: vllm/vllm-openai:latest
     runtime: nvidia
@@ -48,15 +52,16 @@ services:
     #   # Debug environment variables for CUDA errors
     #   # - CUDA_LAUNCH_BLOCKING=1
     #   # - TORCH_USE_CUDA_DSA=1
-      
+
     #   # Alternative attention backends (uncomment to try different ones)
     #   # - VLLM_ATTENTION_BACKEND=FLASHINFER
     #   # - VLLM_ATTENTION_BACKEND=FLASH_ATTN
-      
+
     #   # Logging and debugging
     #   # - VLLM_LOGGING_LEVEL=DEBUG
     #   # - VLLM_USE_V1=0
-      
+
+
     command: [
       "--model", "/models/Qwen/Qwen2.5-Coder-7B-Instruct-AWQ",
       "--served-model-name", "Qwen/Qwen2.5-Coder-7B-Instruct-AWQ",

@@ -66,3 +66,14 @@ lint-all: format lint-fix lint type-check pylint lint-yaml lint-toml-sort securi
 	@echo "  ✅ Type checking passed (pyright)"
 	@echo "  ✅ Additional linting passed (pylint)"
 	@echo ""
+
+lint-fast: format lint-fix lint lint-yaml lint-toml-sort
+	@echo ""
+	@echo "🎉 Fast linting checks completed successfully!"
+	@echo ""
+	@echo "Summary:"
+	@echo "  ✅ Code formatted (ruff format)"
+	@echo "  ✅ Linting passed (ruff check)"
+	@echo "  ✅ YAML linting passed"
+	@echo "  ✅ TOML sorting passed"
+	@echo ""

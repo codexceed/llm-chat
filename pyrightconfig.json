@@ -1,0 +1,11 @@
+{
+    "include": [
+      "chatbot",
+      "tests",
+      "scripts"
+    ],
+    "reportPrivateImportUsage": "warning",
+    "reportAttributeAccessIssue": "warning",
+    "reportOptionalMemberAccess": "warning",
+    "reportOptionalCall": "warning"
+}

@@ -9,6 +9,7 @@ from chatbot.constants import Message
 from chatbot.rag import RAG
 from chatbot.settings import Settings
 from chatbot.utils.chat import stream_response
+from chatbot.web import http
 
 
 class MockUploadedFile(UploadedFile):
@@ -472,14 +473,14 @@ def test_app_components_initialization() -> None:
         mock_get_rag.return_value = mock_rag
 
         # Import should work without errors
-        from chatbot.utils import chat, web
+        from chatbot.utils import chat
 
         # Basic functionality should be available
         assert hasattr(chat, "stream_response")
-        assert hasattr(web, "extract_urls_from_text")
+        assert hasattr(http, "extract_urls_from_text")
 
         # URL extraction should work
-        urls = web.extract_urls_from_text("Visit https://example.com")
+        urls = http.extract_urls_from_text("Visit https://example.com")
         assert "https://example.com" in urls
 
 
@@ -488,7 +489,7 @@ async def test_async_web_processing_integration() -> None:
     """Test async web processing integration."""
     import httpx
 
-    from chatbot.utils.web import lookup_http_urls_in_prompt
+    from chatbot.web.http import fetch_from_http_urls_in_prompt
 
     # Mock HTTP client
     mock_client = AsyncMock(spec=httpx.AsyncClient)
@@ -498,7 +499,7 @@ async def test_async_web_processing_integration() -> None:
     mock_client.get.return_value = mock_response
 
     # Test URL lookup
-    urls, content = await lookup_http_urls_in_prompt("Check out https://example.com", mock_client)
+    urls, content = await fetch_from_http_urls_in_prompt("Check out https://example.com", mock_client)
 
     assert "https://example.com" in urls
     assert "Test web content" in content

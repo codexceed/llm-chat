@@ -22,7 +22,7 @@ class RAGSettings(pydantic.BaseModel):
 
     # Hybrid retrieval settings
     use_hybrid_retrieval: bool = True
-    sparse_model: str = "Qdrant/bm25"  # BM42 sparse embedding model
+    sparse_model: str = "Qdrant/bm25"  # BM25 sparse embedding model
     hybrid_top_k: int = 100
 
     # Relevance filtering settings
@@ -40,6 +40,25 @@ class QdrantSettings(pydantic.BaseModel):
     distance_type: str = models.Distance.COSINE
 
 
+class SearchSettings(pydantic.BaseModel):
+    """Settings for web search functionality."""
+
+    enabled: bool = False
+    provider: str = "google"
+    api_key: str = ""
+    search_id: str = ""  # For Google Custom Search Engine ID
+    num_results: int = 5
+    result_text_max_len: int = 2000  # Maximum length of content from each search result
+    trigger_words: list[str] = pydantic.Field(
+        default_factory=lambda: ["latest", "recent", "current", "today", "news", "update", "new"]
+    )
+
+    # Search result processing settings
+    enable_content_fetch: bool = True  # Whether to fetch full content from search result URLs
+    content_timeout: int = 10  # Timeout in seconds for fetching content
+    max_concurrent_fetches: int = 5  # Maximum concurrent URL fetches
+
+
 class Settings(pydantic_settings.BaseSettings):
     """Configuration settings for the chatbot application."""
 
@@ -55,6 +74,7 @@ class Settings(pydantic_settings.BaseSettings):
     debug: bool = True
     qdrant: QdrantSettings = pydantic.Field(default_factory=QdrantSettings)
     rag: RAGSettings = pydantic.Field(default_factory=RAGSettings)
+    search: SearchSettings = pydantic.Field(default_factory=SearchSettings)
     context_view_size: int = 1000
 
     class Config:

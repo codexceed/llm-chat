@@ -93,6 +93,9 @@ def chat_completion_chunks_strategy(draw: strat.DrawFn, num_chunks: int) -> list
 def chat_completion_messages_strategy(draw: strat.DrawFn) -> list[chat_types.ChatCompletionMessageParam]:
     """Generate a list of valid chat completion messages.
 
+    Args:
+        draw: A function to draw values from strategies.
+
     Returns:
         A list of chat completion messages that will pass validation.
     """

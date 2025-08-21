@@ -1,89 +1,34 @@
 """Shared test configuration and fixtures."""
 
+import contextlib
 import copy
 import os
 import pathlib
+import subprocess
 import tempfile
+import time
 import unittest.mock
 from collections.abc import Generator
+from typing import Final
 
+import httpx
 import hypothesis
+import openai
 import pytest
-import streamlit.runtime.uploaded_file_manager
+import qdrant_client
 
 from chatbot import rag, settings
+
+# pylint: disable=redefined-outer-name
 
 # Configure Hypothesis settings for faster test runs
 hypothesis.settings.register_profile("default", max_examples=50, deadline=5000)
 hypothesis.settings.load_profile("default")
 
 
-class MockUploadedFile(streamlit.runtime.uploaded_file_manager.UploadedFile):
-    """Mock streamlit.runtime.uploaded_file_manager.UploadedFile for testing file upload functionality.
-
-    Args:
-        name: Name of the file.
-        content: File content as bytes.
-        file_id: Unique identifier for the file.
-        mimetype: MIME type of the file.
-    """
-
-    def __init__(self, name: str, content: bytes, file_id: str = "test_file", mimetype: str = "text/plain"):
-        """Initialize the mock uploaded file.
-
-        Args:
-            name: Name of the file.
-            content: File content as bytes.
-            file_id: Unique identifier for the file.
-            mimetype: MIME type of the file.
-        """
-        # Don't call super().__init__() since we're mocking the behavior
-        self.name = name
-        self._content = content
-        self.file_id = file_id
-        self.size = len(content)
-        self.type = mimetype
-
-    def getvalue(self) -> bytes:
-        """Return the file content as bytes.
-
-        Returns:
-            The file content as bytes.
-        """
-        return self._content
-
-    def read(self, size: int | None = -1) -> bytes:
-        """Read file content.
-
-        Args:
-            size: Number of bytes to read, or -1 for all content.
-
-        Returns:
-            The content up to `size` bytes, or the entire content if `size` is not specified.
-        """
-        if size is None or size == -1:
-            return self._content
-        return self._content[:size]
-
-    def seek(self, _offset: int, _whence: int = 0) -> int:
-        """Seek to position (no-op for mock).
-
-        Args:
-            _offset: Seek offset (ignored in mock).
-            _whence: Seek reference point (ignored in mock).
-
-        Returns:
-            The new position.
-        """
-        return 0
-
-    def tell(self) -> int:
-        """Return current position (always 0 for mock).
-
-        Returns:
-            The current position (always 0 for mock).
-        """
-        return 0
+TEST_SERVER_BASE_URL: Final[str] = "http://testserver/v1"
+TEST_SERVER_CHAT_COMPLETIONS_URL: Final[str] = TEST_SERVER_BASE_URL + "/chat/completions"
+TEST_API_KEY: Final[str] = "test-key"
 
 
 @pytest.fixture
@@ -273,54 +218,6 @@ const app = new ChatApp();
     files["javascript"] = js_file
 
     return files
-
-
-@pytest.fixture
-def mock_uploaded_files(sample_files: dict[str, pathlib.Path]) -> list[MockUploadedFile]:
-    """Create mock uploaded files from sample files.
-
-    Args:
-        sample_files: Dictionary mapping file types to their paths.
-
-    Returns:
-        A list of mock uploaded files.
-    """
-    uploaded_files = []
-
-    for file_type, file_path in sample_files.items():
-        content = file_path.read_bytes()
-        mock_file = MockUploadedFile(
-            name=file_path.name, content=content, file_id=f"test_{file_type}", mimetype=_get_mimetype(file_path.suffix)
-        )
-        uploaded_files.append(mock_file)
-
-    return uploaded_files
-
-
-def _get_mimetype(suffix: str) -> str:
-    """Get MIME type for file extension.
-
-    Args:
-        suffix: File extension including the dot.
-
-    Returns:
-        The MIME type for the given file extension.
-    """
-    mimetypes = {
-        ".py": "text/x-python",
-        ".js": "application/javascript",
-        ".ts": "application/typescript",
-        ".jsx": "application/javascript",
-        ".tsx": "application/typescript",
-        ".md": "text/markdown",
-        ".html": "text/html",
-        ".htm": "text/html",
-        ".txt": "text/plain",
-        ".json": "application/json",
-        ".xml": "application/xml",
-        ".css": "text/css",
-    }
-    return mimetypes.get(suffix.lower(), "text/plain")
 
 
 @pytest.fixture
@@ -611,23 +508,16 @@ def _is_qdrant_running() -> bool:
     Returns:
         True if Qdrant service is running and accessible, False otherwise.
     """
-    import httpx
-
-    from chatbot.settings import CHATBOT_SETTINGS
-
     try:
-        response = httpx.get(f"{CHATBOT_SETTINGS.qdrant.url}/collections", timeout=2.0)
+        response = httpx.get(f"{settings.CHATBOT_SETTINGS.qdrant.url}/collections", timeout=2.0)
         return response.status_code == 200
     except (httpx.RequestError, httpx.TimeoutException):
         return False
 
 
 @pytest.fixture(scope="module")
-def qdrant_service() -> Generator[None]:
+def qdrant_service() -> Generator[None]:  # pylint: disable=missing-yield-doc
     """Fixture to start and stop the Qdrant Docker container."""
-    import subprocess
-    import time
-
     # Check if Qdrant is already running
     was_running = _is_qdrant_running()
 
@@ -655,30 +545,33 @@ def qdrant_service() -> Generator[None]:
             )
 
 
+@pytest.mark.usefixtures("qdrant_service")
 @pytest.fixture
-def rag_instance(qdrant_service: None) -> Generator[rag.RAG]:
+def rag_instance() -> Generator[rag.RAG]:
     """Fixture to provide a RAG instance for testing.
-
-    Args:
-        qdrant_service: Fixture to set up the Qdrant service.
 
     Yields:
         An instance of the RAG class.
     """
-    import contextlib
-
-    import qdrant_client
-
-    import chatbot.rag
-    from chatbot.settings import CHATBOT_SETTINGS
-
-    client = qdrant_client.QdrantClient(url=CHATBOT_SETTINGS.qdrant.url, api_key=CHATBOT_SETTINGS.qdrant.api_key)
-    collection_name = CHATBOT_SETTINGS.qdrant.collection_name
-    CHATBOT_SETTINGS.qdrant.collection_name = "test"
+    client = qdrant_client.QdrantClient(
+        url=settings.CHATBOT_SETTINGS.qdrant.url, api_key=settings.CHATBOT_SETTINGS.qdrant.api_key
+    )
+    collection_name = settings.CHATBOT_SETTINGS.qdrant.collection_name
+    settings.CHATBOT_SETTINGS.qdrant.collection_name = "test"
     with contextlib.suppress(Exception):
-        client.delete_collection(CHATBOT_SETTINGS.qdrant.collection_name)
+        client.delete_collection(settings.CHATBOT_SETTINGS.qdrant.collection_name)
 
-    rag = chatbot.rag.RAG()
-    yield rag
+    rag_processor = rag.RAG()
+    yield rag_processor
 
-    CHATBOT_SETTINGS.qdrant.collection_name = collection_name
+    settings.CHATBOT_SETTINGS.qdrant.collection_name = collection_name
+
+
+@pytest.fixture(scope="module")
+def openai_client() -> openai.OpenAI:
+    """Fixture for OpenAI client.
+
+    Returns:
+        An OpenAI client instance.
+    """
+    return openai.OpenAI(base_url=TEST_SERVER_BASE_URL, api_key=TEST_API_KEY)

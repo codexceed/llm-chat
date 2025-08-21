@@ -10,6 +10,7 @@ exclude-protected =
 [DESIGN]
 exclude-too-few-public-methods = ^Test
 max-args = 12
+max-positional-arguments=8
 max-attributes = 13
 max-branches = 15
 max-locals = 20

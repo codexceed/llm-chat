@@ -23,6 +23,22 @@ def render_sidebar() -> None:
             st.session_state.messages = []
 
 
+def _switch_web_search_flag() -> None:
+    """Switches the web search flag in session state."""
+    st.session_state.force_web_search = not st.session_state.force_web_search
+
+
+@st.fragment
+def _toggle_web_search() -> None:
+    """Toggles the web search feature."""
+    st.toggle(
+        "🔍 Enable web search",
+        value=st.session_state.get("force_web_search", False),
+        help="Enable web search functionality",
+        on_change=_switch_web_search_flag,
+    )
+
+
 def render_chat_interface() -> chat.ChatInputValue | None:
     """Renders the chat interface, including the chat history and input.
 
@@ -32,5 +48,9 @@ def render_chat_interface() -> chat.ChatInputValue | None:
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+
+    # Web search toggle above chat input
+    with st._bottom.container():  # pylint: disable=protected-access
+        _toggle_web_search()
 
     return st.chat_input("What is up?", accept_file=True)
