@@ -11,7 +11,8 @@ RAG_PROCESSOR = resources.get_rag_processor()
 
 
 def stream_response(
-    messages: list[chat_types.ChatCompletionMessageParam], openai_client: openai.OpenAI
+    messages: list[chat_types.ChatCompletionMessageParam],
+    openai_client: openai.OpenAI,
 ) -> Iterator[str]:
     """Streams the response from the language model.
 

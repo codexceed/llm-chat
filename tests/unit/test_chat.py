@@ -140,7 +140,7 @@ def test_stream_response_non_string_content(openai_client: openai.OpenAI) -> Non
     """
     # Content is not a string (could be list for multimodal)
     messages: list[chat_types.ChatCompletionMessageParam] = [
-        {"role": "user", "content": [{"type": "text", "text": "Hello"}]}  # type: ignore
+        {"role": "user", "content": [{"type": "text", "text": "Hello"}]},  # type: ignore
     ]
 
     with pytest.raises(ValueError, match="No messages provided for response generation"):

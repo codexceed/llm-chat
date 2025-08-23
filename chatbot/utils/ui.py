@@ -10,11 +10,17 @@ def render_sidebar() -> None:
         st.title("Model Settings")
         st.code(settings.CHATBOT_SETTINGS.llm_model_name, language="bash")
         settings.CHATBOT_SETTINGS.temperature = st.slider(
-            "Temperature", 0.0, 1.0, settings.CHATBOT_SETTINGS.temperature
+            "Temperature",
+            0.0,
+            1.0,
+            settings.CHATBOT_SETTINGS.temperature,
         )
-        settings.CHATBOT_SETTINGS.max_tokens = st.slider("Max Tokens", 1, 4096, settings.CHATBOT_SETTINGS.max_tokens)
+        settings.CHATBOT_SETTINGS.max_tokens = st.slider("Max Tokens", 1, 7000, settings.CHATBOT_SETTINGS.max_tokens)
         settings.CHATBOT_SETTINGS.repetition_penalty = st.slider(
-            "Repetition Penalty", 1.0, 2.0, settings.CHATBOT_SETTINGS.repetition_penalty
+            "Repetition Penalty",
+            1.0,
+            2.0,
+            settings.CHATBOT_SETTINGS.repetition_penalty,
         )
         settings.CHATBOT_SETTINGS.seed = st.number_input("Seed", 0, 1000000, settings.CHATBOT_SETTINGS.seed)
 

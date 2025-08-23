@@ -50,13 +50,54 @@ class SearchSettings(pydantic.BaseModel):
     num_results: int = 5
     result_text_max_len: int = 2000  # Maximum length of content from each search result
     trigger_words: list[str] = pydantic.Field(
-        default_factory=lambda: ["latest", "recent", "current", "today", "news", "update", "new"]
+        default_factory=lambda: ["latest", "recent", "current", "today", "news", "update", "new"],
     )
 
     # Search result processing settings
     enable_content_fetch: bool = True  # Whether to fetch full content from search result URLs
     content_timeout: int = 10  # Timeout in seconds for fetching content
     max_concurrent_fetches: int = 5  # Maximum concurrent URL fetches
+
+
+class MultiStepReasoningSettings(pydantic.BaseModel):
+    """Settings for multi-step reasoning orchestration."""
+
+    enabled: bool = False
+    max_steps: int = 5
+    planning_temperature: float = 0.3
+    step_timeout: int = 30
+    search_top_k: int = 2
+    max_reasoning_tokens: int = 2000
+    max_context_length: int = 24000
+
+    # Query complexity classification
+    complex_query_keywords: list[str] = pydantic.Field(
+        default_factory=lambda: [
+            "compare",
+            "vs",
+            "versus",
+            "analyze",
+            "investigation",
+            "investigate",
+            "timeline",
+            "history",
+            "caused",
+            "impact",
+            "implications",
+            "relationship",
+            "difference",
+            "similarity",
+            "pros and cons",
+            "advantages",
+            "disadvantages",
+            "deeply",
+            "comprehensively",
+            "detailed",
+        ],
+    )
+
+    # Entity counting threshold - queries with multiple entities are often complex
+    multi_entity_threshold: int = 5
 
 
 class Settings(pydantic_settings.BaseSettings):
@@ -75,6 +116,7 @@ class Settings(pydantic_settings.BaseSettings):
     qdrant: QdrantSettings = pydantic.Field(default_factory=QdrantSettings)
     rag: RAGSettings = pydantic.Field(default_factory=RAGSettings)
     search: SearchSettings = pydantic.Field(default_factory=SearchSettings)
+    multi_step: MultiStepReasoningSettings = pydantic.Field(default_factory=MultiStepReasoningSettings)
     context_view_size: int = 1000
 
     class Config:

@@ -351,7 +351,7 @@ async def test_complete_rag_chat_workflow(
 
         # Simulate adding context to user message
         messages: list[Message] = [
-            {"role": "user", "content": f"Context: {context}\n\nQuestion: What does the process_data function do?"}
+            {"role": "user", "content": f"Context: {context}\n\nQuestion: What does the process_data function do?"},
         ]
 
         response_chunks = list(stream_response(cast(Any, messages), mock_openai_client))

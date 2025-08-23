@@ -108,11 +108,10 @@ class WebContextPipeline:
         # Process results
         context = {}
         for name, result in zip(task_names, results, strict=True):
-            if isinstance(result, str):
+            if isinstance(result, str) and result.strip():
                 context[name] = result
             else:
                 LOGGER.error("Error in %s: %s", name, result)
-                context[name] = ""
 
         return context
 
