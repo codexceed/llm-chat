@@ -12,6 +12,7 @@ import scipy.spatial.distance
 from streamlit import logger
 
 from chatbot import resources, settings
+from chatbot.reasoning import prompts
 from chatbot.web import context
 
 LOGGER = logger.get_logger("streamlit")
@@ -182,23 +183,11 @@ class MultiStepOrchestrator:
             List of planned reasoning steps
         """
         timestamp = datetime.datetime.now().isoformat()
-        planning_prompt = f"""
-Date: {timestamp}
-You are a reasoning planner. Given a complex user query, plan the minimum number of steps needed to answer it thoroughly.
-
-Available step types:
-- SEARCH: Perform web search with a specific query
-- REFINE: Refine search based on previous results with a focused query
-- SYNTHESIZE: Combine findings to answer the original question. Synthesized results take priority over constituent parts in the final response.
-
-Planning guidelines:
-- Use SYNTHESIZE strategically to consolidate knowledge at logical breakpoints
-- Multiple synthesis steps can build upon each other hierarchically
-- Recent synthesized results contain the most refined, cumulative knowledge
-- Plan the minimum steps needed while ensuring comprehensive coverage
-- Plan for no more than {self._settings.max_steps} steps
-
-User Query: {query}"""
+        planning_prompt = prompts.PLANNING_PROMPT.format(
+            timestamp=timestamp,
+            max_steps=self._settings.max_steps,
+            query=query,
+        )
 
         try:
             response = self._openai_client.chat.completions.parse(
@@ -321,17 +310,11 @@ User Query: {query}"""
         else:
             previous_content = "\n\n".join([r.content for r in previous_results if r.success])
 
-        refine_prompt = f"""
-Based on the previous search results, perform a more focused search.
-
-Focus: {step.focus}
-Query: {step.query}
-
-Previous results summary:
-{previous_content}
-
-Provide a refined search query that will help get more specific information about the focus area.
-"""
+        refine_prompt = prompts.REFINE_PROMPT.format(
+            focus=step.focus,
+            query=step.query,
+            previous_content=previous_content,
+        )
         LOGGER.debug("Refinement prompt: %s", refine_prompt)
 
         # Get refined query from LLM
@@ -428,20 +411,11 @@ Provide a refined search query that will help get more specific information abou
         if token_count <= self._settings.summary_max_tokens:
             return content  # Already within limits
 
-        summarization_prompt = f"""Summarize the following content while preserving key information relevant to the query "{query}".
-
-Focus on:
-1. Main findings and facts
-2. Specific data, numbers, and dates
-3. Key relationships and connections
-4. Actionable insights
-
-Keep the summary concise but comprehensive, under {self._settings.summary_max_tokens} tokens.
-
-Content:
-{content}
-
-Summary:"""
+        summarization_prompt = prompts.SUMMARIZATION_PROMPT.format(
+            query=query,
+            max_tokens=self._settings.summary_max_tokens,
+            content=content,
+        )
 
         try:
             response = self._openai_client.chat.completions.create(
