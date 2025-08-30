@@ -107,4 +107,7 @@ storage/
 dev/
 brainstorming/
 profiling_output/
-.claude
+.gemini
+
+# GitHub App credentials
+gha-creds-*.json
