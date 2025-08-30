@@ -75,6 +75,28 @@ services:
               count: all
               capabilities: [gpu]
 
+  gpt-oss-20b:
+    image: vllm/vllm-openai:latest
+    runtime: nvidia
+    ports:
+      - "8000:8000"
+    volumes:
+      - "/mnt/c/models/openai/gpt-oss-20b:/models/openai/gpt-oss-20b"
+    ipc: host
+
+    command: [
+      "--model", "/models/openai/gpt-oss-20b",
+      "--served-model-name", "openai/gpt-oss-20b",
+      "--max-model-len=7000"
+    ]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant

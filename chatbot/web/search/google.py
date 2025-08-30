@@ -10,7 +10,7 @@ from streamlit import logger
 
 from chatbot.web.search import base
 
-LOGGER = logger.get_logger(__name__)
+LOGGER = logger.get_logger("streamlit")
 
 
 class GoogleSearchClient(base.SearchClient):
@@ -49,7 +49,7 @@ class GoogleSearchClient(base.SearchClient):
         Raises:
             base.SearchAPIError: When Google API request fails
         """
-        LOGGER.info("Performing Google search for query: %s", query)
+        LOGGER.info('Performing Google search for query: "%s"', query)
 
         # Google Custom Search API limits to 10 results per request
         num_results = min(num_results, 10)

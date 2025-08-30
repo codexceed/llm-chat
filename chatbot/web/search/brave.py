@@ -9,7 +9,7 @@ from streamlit import logger
 
 from chatbot.web.search import base
 
-LOGGER = logger.get_logger(__name__)
+LOGGER = logger.get_logger("streamlit")
 
 
 class BraveSearchClient(base.SearchClient):

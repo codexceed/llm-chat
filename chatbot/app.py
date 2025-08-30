@@ -14,7 +14,7 @@ from chatbot.reasoning import classifier, orchestrator
 from chatbot.utils import chat, ui
 from chatbot.web import context, search
 
-LOGGER = logger.get_logger(__name__)
+LOGGER = logger.get_logger("streamlit")
 RAG_PROCESSOR = resources.get_rag_processor()
 SIMPLE_CONTEXT_PROMPT_TEMPLATE: Final[str] = """
 You are a helpful assistant that answers based on the context.
@@ -72,12 +72,7 @@ def initialize_session_state() -> None:
             http_client=st.session_state.http_client,
             model_name=settings.CHATBOT_SETTINGS.llm_model_name,
             seed=settings.CHATBOT_SETTINGS.seed,
-            max_steps=settings.CHATBOT_SETTINGS.multi_step.max_steps,
-            planning_temperature=settings.CHATBOT_SETTINGS.multi_step.planning_temperature,
-            step_timeout=settings.CHATBOT_SETTINGS.multi_step.step_timeout,
-            search_top_k=settings.CHATBOT_SETTINGS.multi_step.search_top_k,
-            max_reasoning_tokens=settings.CHATBOT_SETTINGS.multi_step.max_reasoning_tokens,
-            max_context_tokens=settings.CHATBOT_SETTINGS.multi_step.max_context_length,
+            reasoning_settings=settings.CHATBOT_SETTINGS.multi_step,
         )
 
 
@@ -92,7 +87,7 @@ async def _process_multi_step_query(prompt: str) -> str | None:
     """
     LOGGER.info("Using multi-step reasoning for complex query")
 
-    with st.spinner("Processing complex query with multi-step reasoning..."):
+    with st.spinner("Processing complex query with multi-step reasoning...", show_time=True):
         # Use multi-step orchestrator for complex queries
         multi_step_orchestrator: orchestrator.MultiStepOrchestrator = st.session_state.multi_step_orchestrator
         if reasoned_context := await multi_step_orchestrator.execute_complex_query(prompt):

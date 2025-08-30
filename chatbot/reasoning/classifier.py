@@ -7,7 +7,7 @@ from streamlit import logger
 
 from chatbot import settings
 
-LOGGER = logger.get_logger(__name__)
+LOGGER = logger.get_logger("streamlit")
 
 
 class QueryComplexity(enum.Enum):

@@ -19,7 +19,7 @@ from streamlit.runtime import uploaded_file_manager
 from chatbot import constants, settings
 from chatbot.web import http
 
-LOGGER = logger.get_logger(__name__)
+LOGGER = logger.get_logger("streamlit")
 
 EmbeddingVectorType: TypeAlias = np.ndarray[Any, np.dtype[np.float64]]
 
@@ -167,7 +167,7 @@ class RAG:
         # Create documents with URL metadata for better tracking
         documents: list[core.Document] = []
         for url, content in zip(urls, web_docs_content, strict=True):
-            if content:
+            if isinstance(content, str) and content:
                 LOGGER.debug("Processing web URL: %s", url)
                 LOGGER.debug("Content: %s", content[:100])
                 doc = core.Document(text=content, metadata={"source": "web_url", "url": url, "content_type": "html"})

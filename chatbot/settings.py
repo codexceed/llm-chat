@@ -67,8 +67,14 @@ class MultiStepReasoningSettings(pydantic.BaseModel):
     planning_temperature: float = 0.3
     step_timeout: int = 30
     search_top_k: int = 2
-    max_reasoning_tokens: int = 2000
-    max_context_length: int = 24000
+    max_context_tokens: int = 4000
+
+    # Context compression settings
+    enable_context_compression: bool = True
+    summary_max_tokens: int = 600  # Max tokens for step summaries
+    compression_temperature: float = 0.1  # Low temperature for consistent summaries
+    keep_recent_steps_detailed: int = 2  # Keep last N steps with full content
+    relevance_threshold: float = 0.7  # Minimum relevance score to keep content
 
     # Query complexity classification
     complex_query_keywords: list[str] = pydantic.Field(
@@ -105,7 +111,9 @@ class Settings(pydantic_settings.BaseSettings):
 
     openai_api_base: str = "http://localhost:8000/v1"
     openai_api_key: str = "not-needed"
-    llm_model_name: str = "Qwen/Qwen2.5-Coder-7B-Instruct-AWQ"
+    llm_model_name: str = "openai/gpt-oss-20b"
+    # Pin HF model revision to avoid unsafe downloads
+    llm_model_revision: str = "main"
     temperature: float = 0.7
     max_tokens: int = 2000
     repetition_penalty: float = 1.1

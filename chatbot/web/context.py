@@ -8,7 +8,7 @@ from streamlit import logger
 from chatbot import settings
 from chatbot.web import http, search
 
-LOGGER = logger.get_logger(__name__)
+LOGGER = logger.get_logger("streamlit")
 
 
 class WebContextPipeline:
@@ -37,7 +37,7 @@ class WebContextPipeline:
             LOGGER.warning("No search manager configured, skipping web search")
             return ""
 
-        LOGGER.info("Performing web search for query: %s", query)
+        LOGGER.info('Performing web search for query: "%s"', query)
         search_results = await self._search_manager.search(query, num_results)
 
         if not search_results:
@@ -110,8 +110,8 @@ class WebContextPipeline:
         for name, result in zip(task_names, results, strict=True):
             if isinstance(result, str) and result.strip():
                 context[name] = result
-            else:
-                LOGGER.error("Error in %s: %s", name, result)
+            elif name == "web_search":
+                LOGGER.warning("No web search context obtained")
 
         return context
 

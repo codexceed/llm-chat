@@ -1,0 +1,26 @@
+---
+
+prompts:
+  - name: "Inference Engines: vLLM vs SGLang"
+    content: "Compare the architectures of vLLM and SGLang. Emphasize KV‑cache management, scheduling, paged attention, and speculative decoding. Research the latest benchmark results and compare generation throughput/latency on consumer GPUs. Cite sources."
+
+  - name: "Timeline of Inference Innovations (2023‑present)"
+    content: "Create a concise timeline of major LLM inference innovations since 2023 (e.g., vLLM, SGLang, TensorRT‑LLM, TGI). For each, summarize the core technique and measurable impact. Prioritize recency and cite authoritative sources."
+
+  - name: "Quantization Tradeoffs for Qwen2.5‑Coder on RTX 4080 Super"
+    content: "Evaluate AWQ vs GPTQ vs FP8 for Qwen2.5‑Coder on a single RTX 4080 Super (16GB). Compare VRAM footprint, batch throughput, latency, and quality deltas. Provide a recommendation for a local chatbot with 4k context. Cite recent benchmarks."
+
+  - name: "Hybrid RAG Settings with Qdrant"
+    content: "Recommend practical RAG settings for a small codebase using Qdrant hybrid retrieval (BM25 + dense with BGE‑small). Specify top_k, hybrid_top_k, chunk_size/overlap, dedup thresholds, and relevance cutoff. Explain tradeoffs briefly and cite any tuning guides."
+
+  - name: "Security Review: OpenAI‑Compatible Servers"
+    content: "Survey recent security issues in OpenAI‑compatible LLM servers (FastAPI-based, vLLM, proxies). Summarize notable CVEs or incidents from the last 18 months and mitigation steps (auth, rate limits, prompt/log redaction). Provide references."
+
+  - name: "Research Reconciliation: Conflicting Benchmarks"
+    content: "Two sources report different throughput for the same model on similar hardware. Identify likely causes (kernel versions, quantization, batch size, tokenizer, decode strategy) and propose a minimal replication plan to reconcile results. Include citations."
+
+  - name: "Web Search Integration Test Plan"
+    content: "Design a test plan for web search integration in this app: trigger heuristics, rate‑limit handling, timeouts, HTML sanitization, and duplicate URL dedup. Provide pytest markers, fixtures/mocks outline, and key assertions. Link to any relevant best practices."
+
+  - name: "Retrieval Tuning: top_k and Chunking"
+    content: "Explain how top_k, chunk_size, and chunk_overlap affect quality and latency in this app. Propose a lightweight ablation (3x3 grid) to tune them with coverage/precision metrics. Give concrete recommended defaults and when to deviate. Cite sources if available."

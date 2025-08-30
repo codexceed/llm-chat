@@ -6,7 +6,7 @@ from streamlit import logger
 
 from chatbot import resources, settings
 
-LOGGER = logger.get_logger(__name__)
+LOGGER = logger.get_logger("streamlit")
 RAG_PROCESSOR = resources.get_rag_processor()
 
 
