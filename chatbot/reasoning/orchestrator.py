@@ -14,7 +14,7 @@ from streamlit import logger
 from streamlit.elements.lib import mutable_status_container
 
 from chatbot import resources, settings
-from chatbot.reasoning import prompts
+from chatbot.reasoning import constants
 from chatbot.web import context
 
 LOGGER = logger.get_logger("streamlit")
@@ -221,7 +221,7 @@ class MultiStepOrchestrator:
             List of planned reasoning steps
         """
         timestamp = datetime.datetime.now().isoformat()
-        planning_prompt = prompts.PLANNING_PROMPT.format(
+        planning_prompt = constants.PLANNING_PROMPT.format(
             timestamp=timestamp,
             max_steps=self._settings.max_steps,
             query=query,
@@ -348,7 +348,7 @@ class MultiStepOrchestrator:
         else:
             previous_content = "\n\n".join([r.content for r in previous_results if r.success])
 
-        refine_prompt = prompts.REFINE_PROMPT.format(
+        refine_prompt = constants.REFINE_PROMPT.format(
             focus=step.focus,
             query=step.query,
             previous_content=previous_content,
@@ -448,7 +448,7 @@ class MultiStepOrchestrator:
         if token_count <= self._settings.summary_max_tokens:
             return content  # Already within limits
 
-        summarization_prompt = prompts.SUMMARIZATION_PROMPT.format(
+        summarization_prompt = constants.SUMMARIZATION_PROMPT.format(
             query=query,
             max_tokens=self._settings.summary_max_tokens,
             content=content,
