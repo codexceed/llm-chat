@@ -9,7 +9,9 @@ import httpx
 import openai
 import pydantic
 import scipy.spatial.distance
+import streamlit as st
 from streamlit import logger
+from streamlit.elements.lib import mutable_status_container
 
 from chatbot import resources, settings
 from chatbot.web import context
@@ -98,7 +100,7 @@ class MultiStepOrchestrator:
     def __init__(
         self,
         web_context_pipeline: context.WebContextPipeline,
-        openai_client: openai.OpenAI,
+        openai_client: openai.AsyncOpenAI,
         http_client: httpx.AsyncClient,
         model_name: str,
         seed: int,
@@ -121,11 +123,12 @@ class MultiStepOrchestrator:
         self._settings = reasoning_settings
         self._seed = seed
 
-    async def execute_complex_query(self, query: str) -> str | None:
+    async def execute_complex_query(self, query: str, status_ui: mutable_status_container.StatusContainer | None = None) -> str | None:
         """Execute a complex query using multi-step reasoning.
 
         Args:
             query: The complex user query
+            status_ui: Optional Streamlit status container for live updates
 
         Returns:
             Synthesized response from multi-step reasoning, if successfully synthesized. Otherwise, None.
@@ -133,12 +136,25 @@ class MultiStepOrchestrator:
         LOGGER.info("Starting multi-step reasoning for query: %s...", query[:100])
 
         # Step 1: Plan the reasoning approach
+        if status_ui:
+            status_ui.update(label="Planning reasoning steps…", state="running", expanded=False)
         plan = await self._plan_reasoning_steps(query)
+        # Save for UI visibility
         if not plan.steps:
             LOGGER.warning("No reasoning steps planned.")
+            if status_ui:
+                status_ui.update(label="No reasoning steps could be planned.", state="error", expanded=True)
             return None
 
         LOGGER.info("Planned %d reasoning steps", len(plan.steps))
+        # Log planned steps in the status container (detailed view)
+        # Expand to show live logs while executing
+        if status_ui:
+            status_ui.update(label=f"Planned {len(plan.steps)} steps. Executing…", state="running", expanded=True)
+        st.write("Planned Steps:")
+        for i, step in enumerate(plan.steps, 1):
+            focus = f" — focus: {step.focus}" if step.focus else ""
+            st.write(f"{i}. {step.step_type.value.upper()}: {step.query}{focus}")
 
         # Step 2: Execute the reasoning chain
         results: list[StepResult] = []
@@ -148,6 +164,9 @@ class MultiStepOrchestrator:
                 break
 
             LOGGER.info("Executing reasoning step %d: %s", i, step.step_type.value)
+            if status_ui:
+                status_ui.update(label=f"Executing step {i}/{len(plan.steps)}: {step.step_type.value}", expanded=True)
+            st.write(f"\n▶ Step {i}: {step.step_type.value.upper()} — query: {step.query}")
 
             try:
                 result = await asyncio.wait_for(self._execute_step(step, results), timeout=self._settings.step_timeout)
@@ -157,19 +176,38 @@ class MultiStepOrchestrator:
 
                 if not result.success:
                     LOGGER.warning("Step %d failed: %s", i, result.error_message)
+                    if status_ui:
+                        st.write(f"❌ Step {i} failed: {result.error_message}")
+                        status_ui.update(label=f"Step {i} failed", state="error", expanded=True)
                     break
+                if status_ui:
+                    synth = " (SYNTH)" if step.step_type == StepType.SYNTHESIZE else ""
+                    st.write(f"✅ Completed step {i}: {step.step_type.value}{synth}")
             except asyncio.TimeoutError:
                 LOGGER.exception("Step %d timed out", i)
+                if status_ui:
+                    st.write(f"⏱️ Step {i} timed out")
+                    status_ui.update(label=f"Step {i} timed out", state="error", expanded=True)
                 break
             except (ValueError, TypeError, RuntimeError) as e:
                 LOGGER.exception("Step %d failed with error: %s", i, e)
+                if status_ui:
+                    st.write(f"❌ Step {i} error: {e}")
+                    status_ui.update(label=f"Error at step {i}", state="error", expanded=True)
                 break
 
         # Step 3: Synthesize final response
         if results:
-            return await self._synthesize_reasoned_context(results)
+            if status_ui:
+                status_ui.update(label="Synthesizing final answer…", state="running", expanded=True)
+            synthesized = await self._synthesize_reasoned_context(results)
+            if status_ui:
+                st.write("\n✅ Synthesis complete.")
+            return synthesized
 
         LOGGER.warning("No successful execution of reasoning steps.")
+        if status_ui:
+            status_ui.update(label="No successful steps executed.", state="error", expanded=True)
         return None
 
     async def _plan_reasoning_steps(self, query: str) -> ReasoningPlanSchema:
@@ -201,7 +239,7 @@ Planning guidelines:
 User Query: {query}"""
 
         try:
-            response = self._openai_client.chat.completions.parse(
+            response = await self._openai_client.chat.completions.parse(
                 model=self._model,
                 messages=[{"role": "user", "content": planning_prompt}],
                 temperature=self._settings.planning_temperature,
@@ -335,17 +373,16 @@ Provide a refined search query that will help get more specific information abou
         LOGGER.debug("Refinement prompt: %s", refine_prompt)
 
         # Get refined query from LLM
-        response = self._openai_client.chat.completions.create(
+        response = await self._openai_client.chat.completions.create(
             model=self._model,
             messages=[{"role": "user", "content": refine_prompt}],
             temperature=0.3,
             max_tokens=200,
         )
 
-        refined_query_content = response.choices[0].message.content
+        refined_query_content = response.choices[0].message.content or ""
         if not refined_query_content:
-            error_msg = "Empty response from refinement LLM"
-            raise ValueError(error_msg)
+            LOGGER.error("Empty response from refinement LLM")
         refined_query = refined_query_content.strip()
         LOGGER.debug("Refined query: %s", refined_query)
 
@@ -444,7 +481,7 @@ Content:
 Summary:"""
 
         try:
-            response = self._openai_client.chat.completions.create(
+            response = await self._openai_client.chat.completions.create(
                 model=self._model,
                 messages=[{"role": "user", "content": summarization_prompt}],
                 temperature=self._settings.compression_temperature,
@@ -529,38 +566,3 @@ Summary:"""
         )
         LOGGER.debug("Compressed context (%d tokens):\n%s", final_tokens, compressed)
         return compressed
-
-    def _rerank_results_by_relevance(self, results: list[StepResult]) -> list[StepResult]:
-        """Rerank results by relevance to the original query.
-
-        Args:
-            results: List of step results to rerank
-
-        Returns:
-            Results sorted by relevance score (highest first)
-        """
-        # Filter out results below relevance threshold
-        filtered_results = [r for r in results if r.relevance_score >= self._settings.relevance_threshold]
-
-        # If filtering removes too many results, keep all but log a warning
-        if len(filtered_results) < len(results) * 0.5:  # If we lose more than 50% of results
-            LOGGER.warning(
-                "Relevance filtering removed %d out of %d results, keeping all results", len(results) - len(filtered_results), len(results)
-            )
-            filtered_results = results
-
-        # Sort by relevance score (highest first), with secondary sort by step order
-        reranked_results = sorted(
-            filtered_results,
-            key=lambda r: r.relevance_score,  # Negative index for original order tie-breaking
-            reverse=True,
-        )
-
-        LOGGER.info(
-            "Reranked %d results by relevance. Top result: %.2f, lowest: %.2f",
-            len(reranked_results),
-            reranked_results[0].relevance_score if reranked_results else 0.0,
-            reranked_results[-1].relevance_score if reranked_results else 0.0,
-        )
-
-        return reranked_results

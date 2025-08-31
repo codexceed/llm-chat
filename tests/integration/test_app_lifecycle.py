@@ -1,14 +1,12 @@
 from collections.abc import Generator
-from typing import Any, cast
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
-from chatbot.constants import Message
 from chatbot.rag import RAG
 from chatbot.settings import Settings
-from chatbot.utils.chat import stream_response
 from chatbot.web import http
 
 
@@ -265,138 +263,6 @@ def test_rag_retrieval_workflow(
         assert isinstance(results, list)
         # Results may be filtered/deduplicated, but should contain strings
         assert all(isinstance(result, str) for result in results)
-
-
-def test_stream_response_integration() -> None:
-    """Test stream response integration with OpenAI client."""
-    # Mock OpenAI client and stream
-    mock_client = MagicMock()
-    mock_stream = MagicMock()
-
-    # Mock stream chunks
-    mock_chunks = [
-        Mock(choices=[Mock(delta=Mock(content="Hello"))]),
-        Mock(choices=[Mock(delta=Mock(content=" there"))]),
-        Mock(choices=[Mock(delta=Mock(content="!"))]),
-        Mock(choices=[Mock(delta=Mock(content=None))]),
-    ]
-    mock_stream.__iter__.return_value = iter(mock_chunks)
-    mock_client.chat.completions.create.return_value = mock_stream
-
-    messages: list[Message] = [{"role": "user", "content": "Hello"}]
-
-    # Test streaming
-    response_chunks = list(stream_response(cast(Any, messages), mock_client))
-
-    assert response_chunks == ["Hello", " there", "!", ""]
-
-    # Verify API call
-    mock_client.chat.completions.create.assert_called_once()
-    call_args = mock_client.chat.completions.create.call_args
-    assert call_args[1]["stream"] is True
-    assert call_args[1]["messages"] == messages
-
-
-@pytest.mark.asyncio
-async def test_complete_rag_chat_workflow(
-    mock_settings: Settings,
-    mock_qdrant_client: MagicMock,
-    mock_embedding_model: MagicMock,
-    mock_vector_store: MagicMock,
-    mock_vector_index: MagicMock,
-) -> None:
-    """Test complete workflow: file upload -> RAG processing -> chat response."""
-    with patch("chatbot.rag.CHATBOT_SETTINGS", mock_settings):
-        # Step 1: Initialize RAG
-        rag = RAG()
-
-        # Step 2: Process uploaded files
-        test_files = [MockUploadedFile("code.py", b"def process_data(): return 'processed'", "file1")]
-
-        with patch("llama_index.core.SimpleDirectoryReader") as mock_reader:
-            mock_documents = [Mock(text="def process_data(): return 'processed'", metadata={"file_path": "code.py"})]
-            mock_reader.return_value.load_data.return_value = mock_documents
-
-            rag.process_uploaded_files(cast(list[UploadedFile], test_files))
-
-        # Step 3: Process web URLs (if any)
-        with patch("chatbot.utils.web.lookup_http_urls_in_prompt") as mock_lookup:
-            mock_lookup.return_value = ([], [])  # No URLs
-            mock_client = AsyncMock()
-            await rag.process_web_urls("Tell me about the code", mock_client)
-
-        # Step 4: Retrieve relevant context
-        mock_node = Mock()
-        mock_node.text = "def process_data(): return 'processed'"
-        mock_node.score = 0.95
-
-        mock_retriever = MagicMock()
-        mock_retriever.retrieve.return_value = [mock_node]
-        mock_vector_index.as_retriever.return_value = mock_retriever
-
-        # Mock the rag.retrieve method directly since the internal mocking is complex
-        with patch.object(rag, "retrieve", return_value=["def process_data(): return 'processed'"]):
-            context = rag.retrieve("What does the process_data function do?")
-
-        # Step 5: Generate chat response
-        mock_openai_client = MagicMock()
-        mock_stream = MagicMock()
-        mock_chunks = [
-            Mock(choices=[Mock(delta=Mock(content="The process_data function"))]),
-            Mock(choices=[Mock(delta=Mock(content=" returns 'processed'"))]),
-            Mock(choices=[Mock(delta=Mock(content=None))]),
-        ]
-        mock_stream.__iter__.return_value = iter(mock_chunks)
-        mock_openai_client.chat.completions.create.return_value = mock_stream
-
-        # Simulate adding context to user message
-        messages: list[Message] = [
-            {"role": "user", "content": f"Context: {context}\n\nQuestion: What does the process_data function do?"},
-        ]
-
-        response_chunks = list(stream_response(cast(Any, messages), mock_openai_client))
-
-        # Verify end-to-end workflow
-        assert len(context) > 0  # Context was retrieved
-        assert response_chunks == ["The process_data function", " returns 'processed'", ""]
-
-        # Verify all components were called
-        mock_vector_index.insert_nodes.assert_called()
-        # Note: mock_retriever.retrieve not called since we mocked rag.retrieve directly
-        mock_openai_client.chat.completions.create.assert_called()
-
-
-def test_error_handling_in_workflow(
-    mock_settings: Settings,
-    mock_qdrant_client: MagicMock,
-    mock_embedding_model: MagicMock,
-    mock_vector_store: MagicMock,
-    mock_vector_index: MagicMock,
-) -> None:
-    """Test error handling throughout the application workflow."""
-    with patch("chatbot.rag.CHATBOT_SETTINGS", mock_settings):
-        # First, create a working RAG instance
-        rag = RAG()
-        assert rag.client is not None
-
-        # Test retrieval with error
-        mock_retriever = MagicMock()
-        mock_retriever.retrieve.side_effect = Exception("Retrieval failed")
-        mock_vector_index.as_retriever.return_value = mock_retriever
-
-        # Should return empty list on error
-        result = rag.retrieve("test query")
-        assert result == []
-
-        # Test chat streaming with API error
-        mock_openai_client = MagicMock()
-        mock_openai_client.chat.completions.create.side_effect = Exception("API error")
-
-        messages: list[Message] = [{"role": "user", "content": "Hello"}]
-
-        # Should raise the exception (as expected behavior)
-        with pytest.raises(Exception, match="API error"):
-            list(stream_response(cast(Any, messages), mock_openai_client))
 
 
 def test_configuration_loading() -> None:

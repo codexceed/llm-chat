@@ -48,7 +48,7 @@ def initialize_session_state() -> None:
     if "http_client" not in st.session_state:
         st.session_state.http_client = httpx.AsyncClient()
     if "openai_client" not in st.session_state:
-        st.session_state.openai_client = openai.OpenAI(
+        st.session_state.openai_client = openai.AsyncOpenAI(
             api_key=settings.CHATBOT_SETTINGS.openai_api_key,
             base_url=settings.CHATBOT_SETTINGS.openai_api_base,
         )
@@ -87,13 +87,21 @@ async def _process_multi_step_query(prompt: str) -> str | None:
     """
     LOGGER.info("Using multi-step reasoning for complex query")
 
-    with st.spinner("Processing complex query with multi-step reasoning...", show_time=True):
-        # Use multi-step orchestrator for complex queries
+    # Provide live status updates via Streamlit's status element
+    # Start collapsed; expand during execution; collapse on completion.
+    with st.status("Planning multi-step reasoning…", state="running", expanded=False) as status_ui:
         multi_step_orchestrator: orchestrator.MultiStepOrchestrator = st.session_state.multi_step_orchestrator
-        if reasoned_context := await multi_step_orchestrator.execute_complex_query(prompt):
-            # Show reasoning context
-            with st.expander("Multi-Step Reasoning Process", expanded=False):
-                st.info("This query was processed using multi-step reasoning for more thorough analysis.")
+        reasoned_context = await multi_step_orchestrator.execute_complex_query(prompt, status_ui)
+
+        # Finalize visual status
+        if reasoned_context:
+            status_ui.update(label="Multi-step reasoning complete.", state="complete", expanded=False)
+        else:
+            status_ui.update(
+                label="Multi-step reasoning produced no context; falling back.",
+                state="error",
+                expanded=False,
+            )
         return reasoned_context
 
 
@@ -166,6 +174,7 @@ async def main() -> None:
     ui.render_sidebar()
     web_context_pipeline: context.WebContextPipeline = st.session_state.web_context_pipeline
     query_classifier: classifier.QueryComplexityClassifier = st.session_state.query_classifier
+    openai_client: openai.AsyncOpenAI = st.session_state.openai_client
 
     if chat_input := ui.render_chat_interface():
         prompt, uploaded_files = chat_input.text, chat_input.files
@@ -204,10 +213,8 @@ async def main() -> None:
                 contextualized_messages[-1]["content"] = contextualized_prompt
 
         # Stream the response from the LLM
-        with st.chat_message("assistant"):
-            response_content = st.write_stream(
-                chat.stream_response(contextualized_messages, st.session_state.openai_client),
-            )
+        chat_container = st.chat_message("assistant")
+        response_content = await chat.stream_response(contextualized_messages, openai_client, chat_container)
 
         if isinstance(response_content, str):
             st.session_state.messages.append(constants.Message(role="assistant", content=response_content))
