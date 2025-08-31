@@ -2,7 +2,7 @@ name: '📋 Gemini Scheduled Issue Triage'
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Runs once a day
+    - cron: '0 0 * * *'  # Runs once a day
   workflow_dispatch:
 
 concurrency:
@@ -25,13 +25,13 @@ jobs:
     runs-on: 'ubuntu-latest'
     steps:
       - name: 'Checkout repository'
-        uses: 'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683' # ratchet:actions/checkout@v4
+        uses: 'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683'  # ratchet:actions/checkout@v4
 
       - name: 'Generate GitHub App Token'
         id: 'generate_token'
         if: |-
           ${{ vars.APP_ID }}
-        uses: 'actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e' # ratchet:actions/create-github-app-token@v2
+        uses: 'actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e'  # ratchet:actions/create-github-app-token@v2
         with:
           app-id: '${{ vars.APP_ID }}'
           private-key: '${{ secrets.APP_PRIVATE_KEY }}'
@@ -83,7 +83,7 @@ jobs:
         uses: 'google-github-actions/run-gemini-cli@v0'
         id: 'gemini_issue_analysis'
         env:
-          GITHUB_TOKEN: '' # Do not pass any auth token here since this runs on untrusted inputs
+          GITHUB_TOKEN: ''  # Do not pass any auth token here since this runs on untrusted inputs
           ISSUES_TO_TRIAGE: '${{ steps.find_issues.outputs.issues_to_triage }}'
           REPOSITORY: '${{ github.repository }}'
           AVAILABLE_LABELS: '${{ steps.get_labels.outputs.available_labels }}'
@@ -156,13 +156,17 @@ jobs:
         with:
           github-token: '${{ steps.generate_token.outputs.token || secrets.GITHUB_TOKEN }}'
           script: |-
-            // Strip code block markers if present
             const rawLabels = process.env.LABELS_OUTPUT;
             core.info(`Raw labels JSON: ${rawLabels}`);
             let parsedLabels;
             try {
-              const trimmedLabels = rawLabels.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '').trim();
-              parsedLabels = JSON.parse(trimmedLabels);
+              const jsonStart = rawLabels.indexOf('[');
+              const jsonEnd = rawLabels.lastIndexOf(']');
+              if (jsonStart === -1 || jsonEnd === -1) {
+                throw new Error("Could not find JSON array in the output.");
+              }
+              const jsonString = rawLabels.substring(jsonStart, jsonEnd + 1);
+              parsedLabels = JSON.parse(jsonString);
               core.info(`Parsed labels JSON: ${JSON.stringify(parsedLabels)}`);
             } catch (err) {
               core.setFailed(`Failed to parse labels JSON from Gemini output: ${err.message}\nRaw output: ${rawLabels}`);
