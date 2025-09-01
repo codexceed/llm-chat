@@ -34,6 +34,11 @@ def _switch_web_search_flag() -> None:
     st.session_state.force_web_search = not st.session_state.force_web_search
 
 
+def _switch_deep_reasoning_flag() -> None:
+    """Switches the deep reasoning flag in session state."""
+    st.session_state.force_deep_reasoning = not st.session_state.force_deep_reasoning
+
+
 @st.fragment
 def _toggle_web_search() -> None:
     """Toggles the web search feature."""
@@ -42,6 +47,17 @@ def _toggle_web_search() -> None:
         value=st.session_state.get("force_web_search", False),
         help="Enable web search functionality",
         on_change=_switch_web_search_flag,
+    )
+
+
+@st.fragment
+def _toggle_deep_reasoning() -> None:
+    """Toggles the deep reasoning feature."""
+    st.toggle(
+        "🧠 Deep reasoning",
+        value=st.session_state.get("force_deep_reasoning", False),
+        help="Force multi-step reasoning for complex analysis",
+        on_change=_switch_deep_reasoning_flag,
     )
 
 
@@ -55,8 +71,12 @@ def render_chat_interface() -> chat.ChatInputValue | None:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Web search toggle above chat input
+    # Feature toggles above chat input
     with st._bottom.container():  # pylint: disable=protected-access
-        _toggle_web_search()
+        col1, col2, _ = st.columns([0.1, 0.1, 0.8])
+        with col1:
+            _toggle_web_search()
+        with col2:
+            _toggle_deep_reasoning()
 
     return st.chat_input("What is up?", accept_file=True)

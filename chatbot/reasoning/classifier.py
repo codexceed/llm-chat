@@ -81,10 +81,12 @@ class QueryComplexityClassifier:
         proper_nouns = re.findall(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b", query)
 
         # Pattern for common entity types
+        # Use inline case-insensitive flags for brand/company patterns only.
+        # Keep acronym detection strictly uppercase to avoid false positives when case-insensitive.
         entity_patterns = [
-            r"\b(?:iPhone|Samsung|Google|Apple|Microsoft|Amazon|Tesla|OpenAI|Anthropic)\b",
-            r"\b(?:Company|Inc|Corp|Ltd|LLC)\b",
-            r"\b[A-Z]{2,}\b",  # Acronyms
+            r"(?i)\b(?:iPhone|Samsung|Google|Apple|Microsoft|Amazon|Tesla|OpenAI|Anthropic)\b",
+            r"(?i)\b(?:Company|Inc|Corp|Ltd|LLC)\b",
+            r"\b[A-Z]{2,}\b",  # Acronyms (strictly uppercase)
         ]
 
         entities = set()
@@ -108,8 +110,9 @@ class QueryComplexityClassifier:
                 entities.add(noun)
 
         # Add entities from patterns
+        # Apply patterns as-specified; case-insensitivity is embedded where intended.
         for pattern in entity_patterns:
-            entities.update(re.findall(pattern, query, re.IGNORECASE))
+            entities.update(re.findall(pattern, query))
 
         # Remove common words that aren't entities
         common_words = {
