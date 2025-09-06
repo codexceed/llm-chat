@@ -73,7 +73,7 @@ def render_chat_interface() -> chat.ChatInputValue | None:
 
     # Feature toggles above chat input
     with st._bottom.container():  # pylint: disable=protected-access
-        col1, col2, _ = st.columns([0.1, 0.1, 0.8])
+        col1, col2, _ = st.columns([0.2, 0.2, 0.8])
         with col1:
             _toggle_web_search()
         with col2:

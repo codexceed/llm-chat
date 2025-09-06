@@ -10,7 +10,7 @@ import streamlit as st
 from streamlit import logger
 
 from chatbot import constants, resources, settings
-from chatbot.reasoning import classifier, orchestrator
+from chatbot.reasoning import classifier, graph_orchestrator, orchestrator
 from chatbot.utils import chat, ui
 from chatbot.web import context, search
 
@@ -63,17 +63,29 @@ def initialize_session_state() -> None:
         st.session_state.web_context_pipeline = context.WebContextPipeline(st.session_state.get("search_manager"))
     if "force_web_search" not in st.session_state:
         st.session_state.force_web_search = False
+    if "force_deep_reasoning" not in st.session_state:
+        st.session_state.force_deep_reasoning = False
     if "query_classifier" not in st.session_state:
         st.session_state.query_classifier = classifier.QueryComplexityClassifier()
     if "multi_step_orchestrator" not in st.session_state and settings.CHATBOT_SETTINGS.multi_step.enabled:
-        st.session_state.multi_step_orchestrator = orchestrator.MultiStepOrchestrator(
-            web_context_pipeline=st.session_state.web_context_pipeline,
-            openai_client=st.session_state.openai_client,
-            http_client=st.session_state.http_client,
-            model_name=settings.CHATBOT_SETTINGS.llm_model_name,
-            seed=settings.CHATBOT_SETTINGS.seed,
-            reasoning_settings=settings.CHATBOT_SETTINGS.multi_step,
-        )
+        if settings.CHATBOT_SETTINGS.multi_step.use_graph_orchestrator:
+            st.session_state.multi_step_orchestrator = graph_orchestrator.GraphOrchestrator(
+                web_context_pipeline=st.session_state.web_context_pipeline,
+                openai_client=st.session_state.openai_client,
+                http_client=st.session_state.http_client,
+                model_name=settings.CHATBOT_SETTINGS.llm_model_name,
+                seed=settings.CHATBOT_SETTINGS.seed,
+                reasoning_settings=settings.CHATBOT_SETTINGS.multi_step,
+            )
+        else:
+            st.session_state.multi_step_orchestrator = orchestrator.MultiStepOrchestrator(
+                web_context_pipeline=st.session_state.web_context_pipeline,
+                openai_client=st.session_state.openai_client,
+                http_client=st.session_state.http_client,
+                model_name=settings.CHATBOT_SETTINGS.llm_model_name,
+                seed=settings.CHATBOT_SETTINGS.seed,
+                reasoning_settings=settings.CHATBOT_SETTINGS.multi_step,
+            )
 
 
 async def _process_multi_step_query(prompt: str) -> str | None:
@@ -87,10 +99,16 @@ async def _process_multi_step_query(prompt: str) -> str | None:
     """
     LOGGER.info("Using multi-step reasoning for complex query")
 
-    # Provide live status updates via Streamlit's status element
-    # Start collapsed; expand during execution; collapse on completion.
+    # Handle different orchestrator types
+    multi_step_orchestrator = st.session_state.multi_step_orchestrator
+
+    # LangGraph orchestrator doesn't need status UI integration (it's simpler)
+    if isinstance(multi_step_orchestrator, graph_orchestrator.GraphOrchestrator):
+        LOGGER.info("Using LangGraph-based orchestrator")
+        reasoned_context = await multi_step_orchestrator.execute_complex_query(prompt)
+        return reasoned_context
+    # Original orchestrator with Streamlit status integration
     with st.status("Planning multi-step reasoning…", state="running", expanded=False) as status_ui:
-        multi_step_orchestrator: orchestrator.MultiStepOrchestrator = st.session_state.multi_step_orchestrator
         reasoned_context = await multi_step_orchestrator.execute_complex_query(prompt, status_ui)
 
         # Finalize visual status

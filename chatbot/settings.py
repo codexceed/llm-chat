@@ -63,6 +63,7 @@ class MultiStepReasoningSettings(pydantic.BaseModel):
     """Settings for multi-step reasoning orchestration."""
 
     enabled: bool = False
+    use_graph_orchestrator: bool = True  # Feature flag for LangGraph vs original orchestrator
     max_steps: int = 5
     planning_temperature: float = 0.3
     step_timeout: int = 30
