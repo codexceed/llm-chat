@@ -102,19 +102,19 @@ async def _process_multi_step_query(prompt: str) -> str | None:
     # Handle different orchestrator types
     multi_step_orchestrator = st.session_state.multi_step_orchestrator
 
-    # LangGraph orchestrator doesn't need status UI integration (it's simpler)
-    if isinstance(multi_step_orchestrator, graph_orchestrator.GraphOrchestrator):
-        LOGGER.info("Using LangGraph-based orchestrator")
-        reasoned_context = await multi_step_orchestrator.execute_complex_query(prompt)
-        return reasoned_context
-    # Original orchestrator with Streamlit status integration
+    # Both orchestrators now support status UI integration
     with st.status("Planning multi-step reasoning…", state="running", expanded=False) as status_ui:
-        reasoned_context = await multi_step_orchestrator.execute_complex_query(prompt, status_ui)
-
-        # Finalize visual status
-        if reasoned_context:
-            status_ui.update(label="Multi-step reasoning complete.", state="complete", expanded=False)
+        if isinstance(multi_step_orchestrator, graph_orchestrator.GraphOrchestrator):
+            LOGGER.info("Using LangGraph-based orchestrator")
+            reasoned_context = await multi_step_orchestrator.execute_complex_query(prompt, status_ui)
         else:
+            # Original orchestrator
+            reasoned_context = await multi_step_orchestrator.execute_complex_query(prompt, status_ui)
+
+        # Finalize visual status (only if not already finalized by orchestrator)
+        if reasoned_context and status_ui.state != "complete":
+            status_ui.update(label="Multi-step reasoning complete.", state="complete", expanded=False)
+        elif not reasoned_context and status_ui.state != "error":
             status_ui.update(
                 label="Multi-step reasoning produced no context; falling back.",
                 state="error",

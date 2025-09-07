@@ -24,3 +24,6 @@ prompts:
 
   - name: "Retrieval Tuning: top_k and Chunking"
     content: "Explain how top_k, chunk_size, and chunk_overlap affect quality and latency in this app. Propose a lightweight ablation (3x3 grid) to tune them with coverage/precision metrics. Give concrete recommended defaults and when to deviate. Cite sources if available."
+
+  - name: "AI companies comparison"
+    content: "Research and compare the current stock performance of the top 3 AI companies (by market cap) from the past week. Calculate which one has the best risk-adjusted returns based on recent volatility. Factor in any major news events that might have influenced their stock movement. Provide specific numbers and reasoning."

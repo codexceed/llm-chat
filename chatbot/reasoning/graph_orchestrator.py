@@ -8,9 +8,11 @@ import httpx
 import openai
 import pydantic
 import scipy.spatial.distance
+import streamlit as st
 from langgraph import graph
 from langgraph.graph import state as graph_state
 from streamlit import logger
+from streamlit.elements.lib import mutable_status_container
 
 from chatbot import resources, settings
 from chatbot.reasoning import templates
@@ -133,6 +135,7 @@ class GraphOrchestrator:
         self._model = model_name
         self._settings = reasoning_settings
         self._seed = seed
+        self._status_ui: mutable_status_container.StatusContainer | None = None
 
         # Build the graph
         self._graph = self._build_graph()
@@ -168,16 +171,20 @@ class GraphOrchestrator:
 
         return state_graph.compile()
 
-    async def execute_complex_query(self, query: str) -> str | None:
+    async def execute_complex_query(self, query: str, status_ui: mutable_status_container.StatusContainer | None = None) -> str | None:
         """Execute a complex query using the graph orchestrator.
 
         Args:
             query: The complex user query
+            status_ui: Optional Streamlit status container for live updates
 
         Returns:
             Synthesized response from multi-step reasoning, if successful. Otherwise, None.
         """
         LOGGER.info("Starting graph-based multi-step reasoning for query: %s...", query[:100])
+
+        # Store status_ui as instance variable for all nodes to access
+        self._status_ui = status_ui
 
         initial_state = ReasoningState(
             query=query,
@@ -191,7 +198,7 @@ class GraphOrchestrator:
         try:
             final_state = await self._graph.ainvoke(initial_state)
             return final_state.get("final_response")
-        except Exception as e:
+        except (RuntimeError, ValueError, TypeError) as e:
             LOGGER.exception("Graph execution failed: %s", e)
             return None
 
@@ -202,6 +209,10 @@ class GraphOrchestrator:
             Dictionary with planned_steps or error_message
         """
         LOGGER.info("Planning reasoning steps")
+
+        # Update UI status
+        if self._status_ui:
+            self._status_ui.update(label="Planning reasoning steps…", state="running", expanded=False)
 
         timestamp = datetime.datetime.now().isoformat()
         planning_prompt = templates.PLANNING_PROMPT.format(
@@ -230,10 +241,26 @@ class GraphOrchestrator:
 
             LOGGER.info("Planned %d reasoning steps", len(plan_content.steps))
             LOGGER.debug("Planned steps: %s", plan_content.model_dump_json(indent=2))
+
+            # Update UI with planned steps and show them to user
+            if self._status_ui:
+                self._status_ui.update(label=f"Planned {len(plan_content.steps)} steps. Executing…", state="running", expanded=True)
+
+            # Display planned steps to user (similar to original orchestrator)
+            st.write("Planned Steps:")
+            for i, step in enumerate(plan_content.steps, 1):
+                focus = f" — focus: {step.focus}" if step.focus else ""
+                st.write(f"{i}. {step.step_type.value.upper()}: {step.query}{focus}")
+
             return {"planned_steps": plan_content.steps}
 
-        except Exception as e:
+        except (RuntimeError, ValueError, TypeError) as e:
             LOGGER.exception("Planning failed: %s", e)
+
+            # Update UI with error
+            if self._status_ui:
+                self._status_ui.update(label="Planning failed.", state="error", expanded=True)
+
             return {"error_message": f"Planning failed: {e}"}
 
     async def _search_node(self, state: ReasoningState) -> dict[str, Any]:
@@ -243,7 +270,16 @@ class GraphOrchestrator:
             Dictionary with step_results and updated current_step_index
         """
         current_step = state["planned_steps"][state["current_step_index"]]
+        step_num = state["current_step_index"] + 1
+        total_steps = len(state["planned_steps"])
+
         LOGGER.info("Executing search step: %s", current_step.query)
+
+        # Update UI status
+        if self._status_ui:
+            self._status_ui.update(label=f"Executing step {step_num}/{total_steps}: {current_step.step_type.value}", expanded=True)
+
+        st.write(f"\n▶ Step {step_num}: {current_step.step_type.value.upper()} — query: {current_step.query}")
 
         try:
             web_context_dict = await self._web_pipeline.gather_web_context(
@@ -270,12 +306,19 @@ class GraphOrchestrator:
             if result.success:
                 result.summary = await self._summarize_content(result.content, current_step.query)
 
+            # Update UI with step completion
+            if self._status_ui:
+                if result.success:
+                    st.write(f"✅ Completed step {step_num}: {current_step.step_type.value}")
+                else:
+                    st.write(f"❌ Step {step_num} failed: {result.error_message}")
+
             return {
                 "step_results": [result],
                 "current_step_index": state["current_step_index"] + 1,
             }
 
-        except Exception as e:
+        except (RuntimeError, ValueError, TypeError) as e:
             LOGGER.exception("Search step failed: %s", e)
             result = StepResult(
                 step=current_step,
@@ -284,6 +327,11 @@ class GraphOrchestrator:
                 error_message=str(e),
                 query=current_step.query,
             )
+
+            # Update UI with error
+            if self._status_ui:
+                st.write(f"❌ Step {step_num} error: {e}")
+
             return {
                 "step_results": [result],
                 "current_step_index": state["current_step_index"] + 1,
@@ -299,7 +347,17 @@ class GraphOrchestrator:
             ValueError: If refinement LLM returns empty response
         """
         current_step = state["planned_steps"][state["current_step_index"]]
+        step_num = state["current_step_index"] + 1
+        total_steps = len(state["planned_steps"])
+
         LOGGER.info("Executing refine step with focus: %s", current_step.focus)
+
+        # Update UI status
+        # status_ui now accessed via self._status_ui
+        if self._status_ui:
+            self._status_ui.update(label=f"Executing step {step_num}/{total_steps}: {current_step.step_type.value}", expanded=True)
+
+        st.write(f"\n▶ Step {step_num}: {current_step.step_type.value.upper()} — query: {current_step.query}")
 
         try:
             # Get previous successful results
@@ -326,7 +384,7 @@ class GraphOrchestrator:
 
             refined_query = response.choices[0].message.content or ""
             if not refined_query:
-                LOGGER.debug("Empty response from refinement LLM: %s", response.model_dump_json())
+                LOGGER.debug("Empty response from refinement LLM: %s", response.model_dump_json(indent=2))
                 raise ValueError("Empty response from refinement LLM")
 
             refined_query = refined_query.strip()
@@ -353,12 +411,19 @@ class GraphOrchestrator:
             if result.success:
                 result.summary = await self._summarize_content(result.content, current_step.query)
 
+            # Update UI with step completion
+            if self._status_ui:
+                if result.success:
+                    st.write(f"✅ Completed step {step_num}: {current_step.step_type.value}")
+                else:
+                    st.write(f"❌ Step {step_num} failed: {result.error_message}")
+
             return {
                 "step_results": [result],
                 "current_step_index": state["current_step_index"] + 1,
             }
 
-        except Exception as e:
+        except (RuntimeError, ValueError, TypeError) as e:
             LOGGER.exception("Refine step failed: %s", e)
             result = StepResult(
                 step=current_step,
@@ -367,6 +432,11 @@ class GraphOrchestrator:
                 error_message=str(e),
                 query=current_step.query,
             )
+
+            # Update UI with error
+            if self._status_ui:
+                st.write(f"❌ Step {step_num} error: {e}")
+
             return {
                 "step_results": [result],
                 "current_step_index": state["current_step_index"] + 1,
@@ -382,7 +452,17 @@ class GraphOrchestrator:
             ValueError: If no successful results are available to synthesize
         """
         current_step = state["planned_steps"][state["current_step_index"]]
+        step_num = state["current_step_index"] + 1
+        total_steps = len(state["planned_steps"])
+
         LOGGER.info("Executing synthesize step")
+
+        # Update UI status
+        # status_ui now accessed via self._status_ui
+        if self._status_ui:
+            self._status_ui.update(label=f"Executing step {step_num}/{total_steps}: {current_step.step_type.value}", expanded=True)
+
+        st.write(f"\n▶ Step {step_num}: {current_step.step_type.value.upper()} — query: {current_step.query}")
 
         try:
             # Find which results have already been incorporated into synthesized steps
@@ -413,12 +493,19 @@ class GraphOrchestrator:
             if result.success:
                 result.summary = await self._summarize_content(result.content, current_step.query)
 
+            # Update UI with step completion
+            if self._status_ui:
+                if result.success:
+                    st.write(f"✅ Completed step {step_num}: {current_step.step_type.value} (SYNTH)")
+                else:
+                    st.write(f"❌ Step {step_num} failed: {result.error_message}")
+
             return {
                 "step_results": [result],
                 "current_step_index": state["current_step_index"] + 1,
             }
 
-        except Exception as e:
+        except (RuntimeError, ValueError, TypeError) as e:
             LOGGER.exception("Synthesize step failed: %s", e)
             result = StepResult(
                 step=current_step,
@@ -427,6 +514,11 @@ class GraphOrchestrator:
                 error_message=str(e),
                 query=current_step.query,
             )
+
+            # Update UI with error
+            if self._status_ui:
+                st.write(f"❌ Step {step_num} error: {e}")
+
             return {
                 "step_results": [result],
                 "current_step_index": state["current_step_index"] + 1,
@@ -440,11 +532,27 @@ class GraphOrchestrator:
         """
         LOGGER.info("Synthesizing final response from %d steps", len(state["step_results"]))
 
+        # Update UI status
+        # status_ui now accessed via self._status_ui
+        if self._status_ui:
+            self._status_ui.update(label="Synthesizing final answer…", state="running", expanded=True)
+
         try:
             final_response = self._build_compressed_context(state["step_results"])
+
+            # Update UI with completion
+            if self._status_ui:
+                st.write("\n✅ Synthesis complete.")
+                self._status_ui.update(label="Multi-step reasoning complete.", state="complete", expanded=False)
+
             return {"final_response": final_response}
-        except Exception as e:
+        except (RuntimeError, ValueError, TypeError) as e:
             LOGGER.exception("Final synthesis failed: %s", e)
+
+            # Update UI with error
+            if self._status_ui:
+                self._status_ui.update(label="Final synthesis failed.", state="error", expanded=True)
+
             return {"error_message": f"Final synthesis failed: {e}"}
 
     def _after_planner(self, state: ReasoningState) -> Literal["continue", "end"]:
@@ -519,7 +627,7 @@ class GraphOrchestrator:
 
             LOGGER.warning("Empty summarization response, using truncated content")
             return content[: self._settings.summary_max_tokens * 2]
-        except Exception as e:
+        except (RuntimeError, ValueError, TypeError) as e:
             LOGGER.exception("Failed to summarize content: %s", e)
             return content[: self._settings.summary_max_tokens * 2]
 
