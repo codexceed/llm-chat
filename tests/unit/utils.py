@@ -48,9 +48,9 @@ def chat_completion_chunks_strategy(draw: strat.DrawFn, num_chunks: int) -> list
                         "Sk",
                         "So",
                         "Zs",
-                    )
+                    ),
                 ),
-            )
+            ),
         )
         content_chunks.append(chunk_content)
 
@@ -131,9 +131,9 @@ def chat_completion_messages_strategy(draw: strat.DrawFn) -> list[chat_types.Cha
                         "Sk",
                         "So",  # Symbols
                         "Zs",  # Spaces
-                    )
+                    ),
                 ),
-            )
+            ),
         ).strip()
 
         # Ensure content is not empty after stripping
@@ -165,9 +165,9 @@ def chat_completion_messages_strategy(draw: strat.DrawFn) -> list[chat_types.Cha
                     "Sk",
                     "So",  # Symbols
                     "Zs",  # Spaces
-                )
+                ),
             ),
-        )
+        ),
     ).strip()
 
     # Ensure the user content is not empty

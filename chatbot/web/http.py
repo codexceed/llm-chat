@@ -8,7 +8,7 @@ import tenacity
 import trafilatura
 from streamlit import logger
 
-LOGGER = logger.get_logger(__name__)
+LOGGER = logger.get_logger("streamlit")
 URL_REGEX = re.compile(
     r"https?\:\/\/(?:[\w\d\.\:\-\@]+)(?:\/[\w\d\-\%\/\.]+)?(?:\?(?:[\w\d]+\=[\w\d\:\/\.\@\;]+)(?:\&[\w\d]+\=[\w\d\:\/\.\@\;]+)*)?(?:\#(?:[\w.])*)?",
     re.IGNORECASE,
@@ -26,7 +26,8 @@ def extract_urls_from_text(text: str) -> list[str]:
     """
     urls = URL_REGEX.findall(text)
     unique_urls = list(set(urls))
-    LOGGER.info("Extracted URLs from prompt:\n- %s", "\n- ".join(unique_urls))
+    if unique_urls:
+        LOGGER.info("Extracted URLs from prompt:\n- %s", "\n- ".join(unique_urls))
     return unique_urls
 
 
@@ -85,7 +86,7 @@ async def _fetch_url(url: str, client: httpx.AsyncClient) -> str:
         return ""
 
 
-async def fetch_content_from_urls(urls: Sequence[str], client: httpx.AsyncClient) -> list[str]:
+async def fetch_content_from_urls(urls: Sequence[str], client: httpx.AsyncClient) -> list[str | BaseException]:
     """Fetch content from a list of URLs asynchronously.
 
     Args:
@@ -97,10 +98,10 @@ async def fetch_content_from_urls(urls: Sequence[str], client: httpx.AsyncClient
     """
     LOGGER.info("Fetching content from URLs:\n- %s", "\n- ".join(urls))
     tasks = [_fetch_url(url, client) for url in urls]
-    return await asyncio.gather(*tasks)
+    return await asyncio.gather(*tasks, return_exceptions=True)
 
 
-async def fetch_from_http_urls_in_prompt(prompt: str, client: httpx.AsyncClient) -> tuple[list[str], list[str]]:
+async def fetch_from_http_urls_in_prompt(prompt: str, client: httpx.AsyncClient) -> tuple[list[str], list[str | BaseException]]:
     """Fetch content from HTTP URLs in a prompt and fetch their content.
 
     Args:
@@ -119,7 +120,7 @@ async def fetch_from_http_urls_in_prompt(prompt: str, client: httpx.AsyncClient)
     return urls, docs
 
 
-def sanitize_web_content(raw_contents: list[str]) -> list[str | None]:
+def sanitize_web_content(raw_contents: list[str | BaseException]) -> list[str | None]:
     """Extract web content as clean text.
 
     Args:
@@ -130,7 +131,7 @@ def sanitize_web_content(raw_contents: list[str]) -> list[str | None]:
     """
     sanitized_contents = []
     for raw_content in raw_contents:
-        if raw_content and (extracted := trafilatura.extract(raw_content)):
+        if isinstance(raw_content, str) and raw_content and (extracted := trafilatura.extract(raw_content)):
             sanitized_contents.append(extracted)
         else:
             sanitized_contents.append(None)

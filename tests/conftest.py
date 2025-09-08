@@ -71,7 +71,7 @@ class Calculator:
 
     def multiply(self, a: int, b: int) -> int:
         return a * b
-"""
+""",
     )
     files["python"] = python_file
 
@@ -104,7 +104,7 @@ from chatbot import RAG
 rag = chatbot.rag.RAG()
 context = rag.retrieve("How to use this?")
 ```
-"""
+""",
     )
     files["markdown"] = markdown_file
 
@@ -130,7 +130,7 @@ context = rag.retrieve("How to use this?")
     </div>
 </body>
 </html>
-"""
+""",
     )
     files["html"] = html_file
 
@@ -160,7 +160,7 @@ Ideas for future features:
 - Multi-language support
 - Document summarization
 - Citation tracking
-"""
+""",
     )
     files["text"] = text_file
 
@@ -213,7 +213,7 @@ class ChatApp {
 }
 
 const app = new ChatApp();
-"""
+""",
     )
     files["javascript"] = js_file
 
@@ -239,7 +239,10 @@ def test_settings() -> settings.Settings:
         port=8080,
         debug=True,
         qdrant=settings.QdrantSettings(
-            url="http://localhost:6333", api_key=None, collection_name="test_collection", vector_size=384
+            url="http://localhost:6333",
+            api_key=None,
+            collection_name="test_collection",
+            vector_size=384,
         ),
         rag=settings.RAGSettings(
             enabled=True,
@@ -554,7 +557,8 @@ def rag_instance() -> Generator[rag.RAG]:
         An instance of the RAG class.
     """
     client = qdrant_client.QdrantClient(
-        url=settings.CHATBOT_SETTINGS.qdrant.url, api_key=settings.CHATBOT_SETTINGS.qdrant.api_key
+        url=settings.CHATBOT_SETTINGS.qdrant.url,
+        api_key=settings.CHATBOT_SETTINGS.qdrant.api_key,
     )
     collection_name = settings.CHATBOT_SETTINGS.qdrant.collection_name
     settings.CHATBOT_SETTINGS.qdrant.collection_name = "test"

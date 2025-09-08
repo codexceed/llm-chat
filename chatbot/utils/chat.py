@@ -1,26 +1,28 @@
-from collections.abc import Iterator
-
 import openai
+import streamlit as st
 from openai.types import chat as chat_types
-from streamlit import logger
+from streamlit import delta_generator, logger
 
 from chatbot import resources, settings
 
-LOGGER = logger.get_logger(__name__)
+LOGGER = logger.get_logger("streamlit")
 RAG_PROCESSOR = resources.get_rag_processor()
 
 
-def stream_response(
-    messages: list[chat_types.ChatCompletionMessageParam], openai_client: openai.OpenAI
-) -> Iterator[str]:
+async def stream_response(
+    messages: list[chat_types.ChatCompletionMessageParam],
+    openai_client: openai.AsyncOpenAI,
+    chat_container: delta_generator.DeltaGenerator | None = None,
+) -> str:
     """Streams the response from the language model.
 
     Args:
         messages: A list of chat messages.
         openai_client: The OpenAI client instance.
+        chat_container: Optional streamlit chat container for display.
 
-    Yields:
-        A string containing the next chunk of the response.
+    Returns:
+        Complete streamed text content.
 
     Raises:
         ValueError: If no messages are provided for response generation.
@@ -33,7 +35,7 @@ def stream_response(
     ):
         raise ValueError("No messages provided for response generation.")
 
-    stream = openai_client.chat.completions.create(
+    stream = await openai_client.chat.completions.create(
         model=settings.CHATBOT_SETTINGS.llm_model_name,
         messages=messages,
         stream=True,
@@ -41,5 +43,25 @@ def stream_response(
         max_tokens=settings.CHATBOT_SETTINGS.max_tokens,
         seed=settings.CHATBOT_SETTINGS.seed,
     )
-    for chunk in stream:
-        yield chunk.choices[0].delta.content or ""
+
+    if chat_container:
+        with chat_container:
+            placeholder = st.empty()
+            streamed_text = ""
+
+            async for chunk in stream:
+                content = chunk.choices[0].delta.content or ""
+                streamed_text += content
+                with placeholder:
+                    st.write(streamed_text)
+
+            if not streamed_text:
+                st.error("Empty response detected. Please try again.")
+                raise ValueError("Empty response detected at the end of streaming.")
+
+        return streamed_text
+
+    content = ""
+    async for chunk in stream:
+        content += chunk.choices[0].delta.content or ""
+    return content

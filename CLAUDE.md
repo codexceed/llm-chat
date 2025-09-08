@@ -55,17 +55,25 @@ This is a modern chatbot application built with Streamlit that integrates Large 
 
 ### Core Components
 
-- **`chatbot/app.py`** - Main Streamlit application with integrated web context pipeline
+- **`chatbot/app.py`** - Main Streamlit application with integrated web context pipeline and multi-step reasoning
 - **`chatbot/utils/chat.py`** - Core chat logic and LLM interaction with streaming responses
 - **`chatbot/rag.py`** - RAG system with Qdrant vector store, hybrid retrieval, and adaptive parsing
 - **`chatbot/utils/ui.py`** - Streamlit UI components and interface rendering
 - **`chatbot/settings.py`** - Centralized configuration management using Pydantic settings
 - **`chatbot/constants.py`** - Type definitions and file type mappings for RAG processing
 - **`chatbot/cli.py`** - Command-line interface entry point
+- **`chatbot/reasoning/`** - Multi-step reasoning system for complex queries
+  - **`orchestrator.py`** - Multi-step reasoning orchestrator with plan generation and execution
+  - **`classifier.py`** - Query complexity classifier for routing between simple and complex reasoning
+  - **`templates.py`** - Prompt templates for planning, refinement, and summarization
 - **`chatbot/web/`** - Web processing module with search integration and URL handling
   - **`http.py`** - HTTP client utilities with retry logic and content sanitization
   - **`context.py`** - Web context pipeline for unified web content processing
   - **`search/`** - Search API integrations (Google Custom Search, Brave Search)
+    - **`base.py`** - Base search interface and common functionality
+    - **`google.py`** - Google Custom Search implementation
+    - **`brave.py`** - Brave Search API implementation
+    - **`manager.py`** - Search provider manager and routing
 - **`chatbot/resources.py`** - Resource management and initialization
 
 ### Key Architecture Patterns
@@ -76,6 +84,13 @@ This is a modern chatbot application built with Streamlit that integrates Large 
 - Adaptive parsing strategy based on file types (code, markdown, HTML, text)
 - Intelligent chunk deduplication using vectorized cosine similarity
 - Language-specific code parsing with Tree-sitter integration
+
+**Multi-Step Reasoning System:**
+- Query complexity classification to route between simple context injection and multi-step reasoning
+- Structured reasoning plan generation with search, refine, and synthesize steps
+- Intelligent context compression with step summarization and hierarchical synthesis
+- Real-time execution monitoring with step-by-step progress tracking
+- Configurable reasoning parameters (max steps, timeouts, token limits, temperature settings)
 
 **Web Context Pipeline:**
 - Independent web content processing separate from RAG system
@@ -92,10 +107,14 @@ This is a modern chatbot application built with Streamlit that integrates Large 
 **Enhanced Chat Flow:**
 1. User input processed through Streamlit interface
 2. File uploads automatically indexed into vector store
-3. Web context pipeline gathers content from URLs and search APIs concurrently
-4. RAG context retrieved from vector database with hybrid search
-5. All context sources merged and appended to user queries
-6. Streaming responses from OpenAI-compatible LLM API
+3. Query complexity classification determines reasoning approach:
+   - **Simple queries:** Direct context injection with web search and RAG
+   - **Complex queries:** Multi-step reasoning with orchestrated search and synthesis
+4. Web context pipeline gathers content from URLs and search APIs concurrently
+5. RAG context retrieved from vector database with hybrid search
+6. For complex queries: Multi-step reasoning orchestrator executes planned reasoning steps
+7. All context sources merged and appended to user queries (or reasoned context for complex queries)
+8. Streaming responses from OpenAI-compatible LLM API
 
 ### File Processing Strategy
 
@@ -128,6 +147,7 @@ Key configuration areas:
 - **RAG settings**: Embedding model, chunk size, hybrid retrieval, relevance filtering
 - **Qdrant settings**: Database URL, collection name, vector dimensions
 - **Search settings**: Provider (Google/Brave), API keys, trigger words, result limits
+- **Multi-step reasoning**: Enable/disable, max steps, planning temperature, context compression, query complexity keywords
 - **Adaptive parsing**: Code chunk sizes, semantic parsing thresholds
 
 ## Storage Structure
@@ -138,7 +158,6 @@ Key configuration areas:
 
 ## Development Notes
 
-- Always check code quality using `code-quality` agent after performing code changes
 - Think critically and deeply before you respond to:
   - Queries about major feature updates (consider design implications for scale, maintainability, effort)
   - Discussions about performance optimization
@@ -148,3 +167,4 @@ Key configuration areas:
   - Use `pytest` and its test function format
   - Prefer using `hypothesis` library to generate property-based test cases over hard-coded test cases
   - Avoid mocking dependencies as much as possible. Consider looking up pre-existing libraries that can effectively mock dependencies.
+- **Always check code quality using `code-quality` agent after performing code changes**

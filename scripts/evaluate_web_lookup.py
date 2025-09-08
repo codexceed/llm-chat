@@ -112,7 +112,7 @@ class WebLookupEvaluator:
                 _urls, contents = await chatbot.web.http.fetch_from_http_urls_in_prompt(prompt, client)
 
                 success = len(contents) > 0
-                content_length = sum(len(content) for content in contents)
+                content_length = sum(len(content) for content in contents if isinstance(content, str))
 
         except httpx.ConnectTimeout:
             error_type = "ConnectTimeout"

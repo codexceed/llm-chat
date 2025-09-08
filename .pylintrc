@@ -46,7 +46,7 @@ fail-on =
     use-symbolic-message-instead,
     useless-suppression
 
-fail-under = 9
+fail-under = 9.8
 
 load-plugins =
     pylint.extensions.code_style,

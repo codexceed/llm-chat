@@ -19,7 +19,7 @@ from streamlit.runtime import uploaded_file_manager
 from chatbot import constants, settings
 from chatbot.web import http
 
-LOGGER = logger.get_logger(__name__)
+LOGGER = logger.get_logger("streamlit")
 
 EmbeddingVectorType: TypeAlias = np.ndarray[Any, np.dtype[np.float64]]
 
@@ -31,10 +31,12 @@ class RAG:
         """Initialize the RAG processor with Qdrant vector store and hybrid search."""
         LOGGER.info("Initializing RAG processor with Qdrant hybrid vector store.")
         self.client = qdrant_client.QdrantClient(
-            url=settings.CHATBOT_SETTINGS.qdrant.url, api_key=settings.CHATBOT_SETTINGS.qdrant.api_key
+            url=settings.CHATBOT_SETTINGS.qdrant.url,
+            api_key=settings.CHATBOT_SETTINGS.qdrant.api_key,
         )
         self.embedding_model = huggingface.HuggingFaceEmbedding(
-            model_name=settings.CHATBOT_SETTINGS.rag.embedding_model, device=settings.CHATBOT_SETTINGS.rag.device
+            model_name=settings.CHATBOT_SETTINGS.rag.embedding_model,
+            device=settings.CHATBOT_SETTINGS.rag.device,
         )
 
         # Configure LlamaIndex settings
@@ -58,7 +60,8 @@ class RAG:
                 collection_name=settings.CHATBOT_SETTINGS.qdrant.collection_name,
             )
         self.index = core.VectorStoreIndex.from_vector_store(  # pyright: ignore[reportUnknownMemberType]
-            vector_store=self.vector_store, embed_model=self.embedding_model
+            vector_store=self.vector_store,
+            embed_model=self.embedding_model,
         )  # type: ignore
 
         # Configure retriever with hybrid search parameters
@@ -98,7 +101,7 @@ class RAG:
             chunk_overlap=settings.CHATBOT_SETTINGS.rag.chunk_overlap,
         )
         self._sentence_pipeline = ingestion.IngestionPipeline(
-            transformations=[self._sentence_parser, self.embedding_model]
+            transformations=[self._sentence_parser, self.embedding_model],
         )
 
         if settings.CHATBOT_SETTINGS.rag.use_adaptive_parsing:
@@ -113,11 +116,11 @@ class RAG:
 
             # Initialize pipelines (excluding code pipeline - created dynamically)
             self._markdown_pipeline = ingestion.IngestionPipeline(
-                transformations=[self._markdown_parser, self.embedding_model]
+                transformations=[self._markdown_parser, self.embedding_model],
             )
             self._html_pipeline = ingestion.IngestionPipeline(transformations=[self._html_parser, self.embedding_model])
             self._semantic_pipeline = ingestion.IngestionPipeline(
-                transformations=[self._semantic_parser, self.embedding_model]
+                transformations=[self._semantic_parser, self.embedding_model],
             )
 
     def process_uploaded_files(self, uploaded_files: list[uploaded_file_manager.UploadedFile]) -> None:
@@ -164,7 +167,7 @@ class RAG:
         # Create documents with URL metadata for better tracking
         documents: list[core.Document] = []
         for url, content in zip(urls, web_docs_content, strict=True):
-            if content:
+            if isinstance(content, str) and content:
                 LOGGER.debug("Processing web URL: %s", url)
                 LOGGER.debug("Content: %s", content[:100])
                 doc = core.Document(text=content, metadata={"source": "web_url", "url": url, "content_type": "html"})
@@ -199,9 +202,7 @@ class RAG:
             # Apply relevance filtering if enabled using node scores
             if settings.CHATBOT_SETTINGS.rag.enable_relevance_filtering:
                 filtered_nodes = [
-                    node
-                    for node in nodes
-                    if node.score is not None and node.score >= settings.CHATBOT_SETTINGS.rag.relevance_threshold
+                    node for node in nodes if node.score is not None and node.score >= settings.CHATBOT_SETTINGS.rag.relevance_threshold
                 ]
                 LOGGER.info(
                     "Filtered %d -> %d nodes by relevance (threshold: %s)",
@@ -261,7 +262,9 @@ class RAG:
         return deduplicated_chunks
 
     def _vectorized_cosine_similarity(
-        self, embeddings1: EmbeddingVectorType, embeddings2: EmbeddingVectorType
+        self,
+        embeddings1: EmbeddingVectorType,
+        embeddings2: EmbeddingVectorType,
     ) -> EmbeddingVectorType:
         """Calculate vectorized cosine similarity between embedding matrices.
 
@@ -401,7 +404,9 @@ class RAG:
 
             except (ValueError, ImportError, RuntimeError) as e:  # noqa: PERF203
                 LOGGER.error(
-                    "CodeSplitter failed for language '%s': %s. Falling back to semantic splitter.", language, e
+                    "CodeSplitter failed for language '%s': %s. Falling back to semantic splitter.",
+                    language,
+                    e,
                 )
                 # Fallback to semantic splitter on any error
                 fallback_nodes = self._semantic_pipeline.run(documents=docs)

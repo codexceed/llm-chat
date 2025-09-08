@@ -1,7 +1,7 @@
 """Common constants for the chatbot application."""
 
 import enum
-from typing import Literal, TypedDict
+from typing import Final, Literal, TypedDict
 
 
 class Message(TypedDict):
@@ -21,7 +21,7 @@ class FileTypes(enum.Enum):
     UNKNOWN = "unknown"
 
 
-FILE_EXTENSION_TYPE_MAPPING: dict[FileTypes, set[str]] = {
+FILE_EXTENSION_TYPE_MAPPING: Final[dict[FileTypes, set[str]]] = {
     FileTypes.CODE: {
         ".py",
         ".js",
@@ -55,7 +55,7 @@ FILE_EXTENSION_TYPE_MAPPING: dict[FileTypes, set[str]] = {
 }
 
 # Map file extensions to CodeSplitter language identifiers
-EXTENSION_TO_LANGUAGE_MAPPING: dict[str, str] = {
+EXTENSION_TO_LANGUAGE_MAPPING: Final[dict[str, str]] = {
     ".py": "python",
     ".js": "javascript",
     ".jsx": "javascript",

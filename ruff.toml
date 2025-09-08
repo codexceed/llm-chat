@@ -1,5 +1,5 @@
 extend-include = ["*.ipynb"]
-line-length = 120
+line-length = 140
 include = [
     "chatbot/**/*.py",
     "tests/**/*.py",

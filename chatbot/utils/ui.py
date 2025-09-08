@@ -10,11 +10,17 @@ def render_sidebar() -> None:
         st.title("Model Settings")
         st.code(settings.CHATBOT_SETTINGS.llm_model_name, language="bash")
         settings.CHATBOT_SETTINGS.temperature = st.slider(
-            "Temperature", 0.0, 1.0, settings.CHATBOT_SETTINGS.temperature
+            "Temperature",
+            0.0,
+            1.0,
+            settings.CHATBOT_SETTINGS.temperature,
         )
-        settings.CHATBOT_SETTINGS.max_tokens = st.slider("Max Tokens", 1, 4096, settings.CHATBOT_SETTINGS.max_tokens)
+        settings.CHATBOT_SETTINGS.max_tokens = st.slider("Max Tokens", 1, 7000, settings.CHATBOT_SETTINGS.max_tokens)
         settings.CHATBOT_SETTINGS.repetition_penalty = st.slider(
-            "Repetition Penalty", 1.0, 2.0, settings.CHATBOT_SETTINGS.repetition_penalty
+            "Repetition Penalty",
+            1.0,
+            2.0,
+            settings.CHATBOT_SETTINGS.repetition_penalty,
         )
         settings.CHATBOT_SETTINGS.seed = st.number_input("Seed", 0, 1000000, settings.CHATBOT_SETTINGS.seed)
 
@@ -28,6 +34,11 @@ def _switch_web_search_flag() -> None:
     st.session_state.force_web_search = not st.session_state.force_web_search
 
 
+def _switch_deep_reasoning_flag() -> None:
+    """Switches the deep reasoning flag in session state."""
+    st.session_state.force_deep_reasoning = not st.session_state.force_deep_reasoning
+
+
 @st.fragment
 def _toggle_web_search() -> None:
     """Toggles the web search feature."""
@@ -36,6 +47,17 @@ def _toggle_web_search() -> None:
         value=st.session_state.get("force_web_search", False),
         help="Enable web search functionality",
         on_change=_switch_web_search_flag,
+    )
+
+
+@st.fragment
+def _toggle_deep_reasoning() -> None:
+    """Toggles the deep reasoning feature."""
+    st.toggle(
+        "🧠 Deep reasoning",
+        value=st.session_state.get("force_deep_reasoning", False),
+        help="Force multi-step reasoning for complex analysis",
+        on_change=_switch_deep_reasoning_flag,
     )
 
 
@@ -49,8 +71,12 @@ def render_chat_interface() -> chat.ChatInputValue | None:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Web search toggle above chat input
+    # Feature toggles above chat input
     with st._bottom.container():  # pylint: disable=protected-access
-        _toggle_web_search()
+        col1, col2, _ = st.columns([0.2, 0.2, 0.8])
+        with col1:
+            _toggle_web_search()
+        with col2:
+            _toggle_deep_reasoning()
 
     return st.chat_input("What is up?", accept_file=True)

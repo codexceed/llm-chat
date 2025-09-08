@@ -89,7 +89,8 @@ class RetrievalComparer:
     def __init__(self) -> None:
         """Initialize the RetrievalComparer with embedding models and Qdrant client."""
         self.embedding_model: huggingface.HuggingFaceEmbedding = huggingface.HuggingFaceEmbedding(
-            model_name="BAAI/bge-small-en-v1.5", device="cpu"
+            model_name="BAAI/bge-small-en-v1.5",
+            device="cpu",
         )
         self.client: qdrant_client.QdrantClient
         self.dense_index: core.VectorStoreIndex
@@ -157,8 +158,7 @@ class RetrievalComparer:
 
         # Create documents
         documents: list[core.Document] = [
-            core.Document(text=f"{doc['title']}\n\n{doc['content']}", metadata={"title": doc["title"]})
-            for doc in sample_documents
+            core.Document(text=f"{doc['title']}\n\n{doc['content']}", metadata={"title": doc["title"]}) for doc in sample_documents
         ]
 
         # Create indexes
@@ -187,7 +187,12 @@ class RetrievalComparer:
         self.print_final_summary(results_summary)
 
     def _evaluate_single_query(
-        self, test_case: dict[str, Any], query_num: int, total_queries: int, dense_retriever: Any, hybrid_retriever: Any
+        self,
+        test_case: dict[str, Any],
+        query_num: int,
+        total_queries: int,
+        dense_retriever: Any,
+        hybrid_retriever: Any,
     ) -> dict[str, Any]:
         """Evaluate a single query with both dense and hybrid retrievers.
 
@@ -366,14 +371,14 @@ class RetrievalComparer:
             complex_hybrid_wins = sum(1 for r in complex_queries if "HYBRID WINS" in r["winner"])
             print(f"  Complex Queries (4+ terms): {len(complex_queries)} total")
             print(
-                f"    Hybrid wins: {complex_hybrid_wins}/{len(complex_queries)} ({complex_hybrid_wins / len(complex_queries) * 100:.1f}%)"
+                f"    Hybrid wins: {complex_hybrid_wins}/{len(complex_queries)} ({complex_hybrid_wins / len(complex_queries) * 100:.1f}%)",
             )
 
         if simple_queries:
             simple_dense_success = sum(1 for r in simple_queries if "DENSE WINS" in r["winner"] or "TIE" in r["winner"])
             print(f"  Simple Queries (<4 terms): {len(simple_queries)} total")
             print(
-                f"    Dense success: {simple_dense_success}/{len(simple_queries)} ({simple_dense_success / len(simple_queries) * 100:.1f}%)"
+                f"    Dense success: {simple_dense_success}/{len(simple_queries)} ({simple_dense_success / len(simple_queries) * 100:.1f}%)",
             )
 
     def _print_insights_and_recommendations(self, results: list[dict[str, Any]]) -> None:
@@ -413,7 +418,7 @@ class RetrievalComparer:
         avg_dense_time = sum(r["dense_time"] for r in results) / total_tests
         avg_hybrid_time = sum(r["hybrid_time"] for r in results) / total_tests
         print(
-            f"  → Consider performance: Dense ~{abs(avg_hybrid_time - avg_dense_time) / avg_dense_time * 100:.1f}% faster on average"
+            f"  → Consider performance: Dense ~{abs(avg_hybrid_time - avg_dense_time) / avg_dense_time * 100:.1f}% faster on average",
         )
 
     def _group_by_category(self, results: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
@@ -431,7 +436,10 @@ class RetrievalComparer:
         return categories
 
     def _get_strong_categories(
-        self, categories: dict[str, list[dict[str, Any]]], winner_types: str | list[str], threshold: float
+        self,
+        categories: dict[str, list[dict[str, Any]]],
+        winner_types: str | list[str],
+        threshold: float,
     ) -> list[str]:
         """Get categories where a method performs strongly.
 

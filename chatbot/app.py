@@ -2,6 +2,7 @@
 
 import asyncio
 import copy
+from typing import Any, Final
 
 import httpx
 import openai
@@ -9,12 +10,13 @@ import streamlit as st
 from streamlit import logger
 
 from chatbot import constants, resources, settings
+from chatbot.reasoning import classifier, graph_orchestrator, orchestrator
 from chatbot.utils import chat, ui
 from chatbot.web import context, search
 
-LOGGER = logger.get_logger(__name__)
+LOGGER = logger.get_logger("streamlit")
 RAG_PROCESSOR = resources.get_rag_processor()
-PROMPT_TEMPLATE = """
+SIMPLE_CONTEXT_PROMPT_TEMPLATE: Final[str] = """
 You are a helpful assistant that answers based on the context.
 
 Context:
@@ -23,6 +25,19 @@ Context:
 Question:
 {prompt}
 """
+
+REASONED_CONTEXT_PROMPT_TEMPLATE: Final[str] = """
+Based on the multi-step reasoning results below, provide a comprehensive answer to the original question.
+
+Original Question: {prompt}
+
+Multi-Step Reasoning Results:
+{reasoning_context}
+
+Please synthesize this information into a clear, well-structured answer that directly addresses
+the original question. Focus on the key insights and connections across the different research steps.
+
+Answer:"""
 
 
 def initialize_session_state() -> None:
@@ -33,7 +48,7 @@ def initialize_session_state() -> None:
     if "http_client" not in st.session_state:
         st.session_state.http_client = httpx.AsyncClient()
     if "openai_client" not in st.session_state:
-        st.session_state.openai_client = openai.OpenAI(
+        st.session_state.openai_client = openai.AsyncOpenAI(
             api_key=settings.CHATBOT_SETTINGS.openai_api_key,
             base_url=settings.CHATBOT_SETTINGS.openai_api_base,
         )
@@ -48,6 +63,119 @@ def initialize_session_state() -> None:
         st.session_state.web_context_pipeline = context.WebContextPipeline(st.session_state.get("search_manager"))
     if "force_web_search" not in st.session_state:
         st.session_state.force_web_search = False
+    if "force_deep_reasoning" not in st.session_state:
+        st.session_state.force_deep_reasoning = False
+    if "query_classifier" not in st.session_state:
+        st.session_state.query_classifier = classifier.QueryComplexityClassifier()
+    if "multi_step_orchestrator" not in st.session_state and settings.CHATBOT_SETTINGS.multi_step.enabled:
+        if settings.CHATBOT_SETTINGS.multi_step.use_graph_orchestrator:
+            st.session_state.multi_step_orchestrator = graph_orchestrator.GraphOrchestrator(
+                web_context_pipeline=st.session_state.web_context_pipeline,
+                openai_client=st.session_state.openai_client,
+                http_client=st.session_state.http_client,
+                model_name=settings.CHATBOT_SETTINGS.llm_model_name,
+                seed=settings.CHATBOT_SETTINGS.seed,
+                reasoning_settings=settings.CHATBOT_SETTINGS.multi_step,
+            )
+        else:
+            st.session_state.multi_step_orchestrator = orchestrator.MultiStepOrchestrator(
+                web_context_pipeline=st.session_state.web_context_pipeline,
+                openai_client=st.session_state.openai_client,
+                http_client=st.session_state.http_client,
+                model_name=settings.CHATBOT_SETTINGS.llm_model_name,
+                seed=settings.CHATBOT_SETTINGS.seed,
+                reasoning_settings=settings.CHATBOT_SETTINGS.multi_step,
+            )
+
+
+async def _process_multi_step_query(prompt: str) -> str | None:
+    """Process query using multi-step reasoning.
+
+    Args:
+        prompt: User query to process
+
+    Returns:
+        Multi-step reasoning context if successfully synthesized, else None
+    """
+    LOGGER.info("Using multi-step reasoning for complex query")
+
+    # Handle different orchestrator types
+    multi_step_orchestrator = st.session_state.multi_step_orchestrator
+
+    # Both orchestrators now support status UI integration
+    with st.status("Planning multi-step reasoning…", state="running", expanded=False) as status_ui:
+        if isinstance(multi_step_orchestrator, graph_orchestrator.GraphOrchestrator):
+            LOGGER.info("Using LangGraph-based orchestrator")
+        reasoned_context = await multi_step_orchestrator.execute_complex_query(prompt, status_ui)
+
+        # Finalize visual status (only if not already finalized by orchestrator)
+        if reasoned_context and status_ui._current_state != "complete":  # pylint: disable=protected-access
+            status_ui.update(label="Multi-step reasoning complete.", state="complete", expanded=False)  # pylint: disable=protected-access
+        elif not reasoned_context and status_ui._current_state != "error":
+            status_ui.update(
+                label="Multi-step reasoning produced no context; falling back.",
+                state="error",
+                expanded=False,
+            )
+        return reasoned_context
+
+
+async def _gather_context_for_simple_query(
+    prompt: str,
+    uploaded_files: list[Any],
+    web_context_pipeline: context.WebContextPipeline,
+) -> str:
+    """Gather context for simple query processing.
+
+    Args:
+        prompt: User query
+        uploaded_files: List of uploaded files
+        web_context_pipeline: Web context pipeline instance
+
+    Returns:
+        Combined context text
+    """
+    LOGGER.info("Using simple context injection approach")
+
+    # Initialize context components
+    context_text = ""
+    rag_context = ""
+
+    with st.spinner("Retrieving additional context..."):
+        # Always get web context (independent of RAG)
+        LOGGER.info("Gathering web context.")
+
+        web_context_dict = await web_context_pipeline.gather_web_context(
+            prompt,
+            st.session_state.http_client,
+            enable_web_search=settings.CHATBOT_SETTINGS.search.enabled,
+            force_web_search=st.session_state.force_web_search,
+            search_num_results=settings.CHATBOT_SETTINGS.search.num_results,
+        )
+
+        # If RAG is enabled, retrieve RAG context
+        if settings.CHATBOT_SETTINGS.rag.enabled:
+            LOGGER.info("Gathering RAG context.")
+            # Process files through RAG system (if any)
+            if uploaded_files:
+                LOGGER.debug(
+                    "Processing uploaded files:\n-%s",
+                    "- ".join([file.name for file in uploaded_files]),
+                )
+                RAG_PROCESSOR.process_uploaded_files(uploaded_files)
+
+            # Get RAG context from vector database
+            rag_context_chunks = RAG_PROCESSOR.retrieve(prompt)
+            rag_context = "\n\n".join(rag_context_chunks) if rag_context_chunks else ""
+
+        # Merge all context sources (web + RAG)
+        context_text = web_context_pipeline.merge_context(web_context_dict, rag_context)
+
+    if context_text:
+        with st.expander("Relevant Context", expanded=False):
+            st.text(context_text[: settings.CHATBOT_SETTINGS.context_view_size] + "...")
+
+    return context_text
 
 
 async def main() -> None:
@@ -60,6 +188,8 @@ async def main() -> None:
     st.set_page_config(layout="wide")
     ui.render_sidebar()
     web_context_pipeline: context.WebContextPipeline = st.session_state.web_context_pipeline
+    query_classifier: classifier.QueryComplexityClassifier = st.session_state.query_classifier
+    openai_client: openai.AsyncOpenAI = st.session_state.openai_client
 
     if chat_input := ui.render_chat_interface():
         prompt, uploaded_files = chat_input.text, chat_input.files
@@ -72,55 +202,40 @@ async def main() -> None:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-            # Initialize context components
-            context_text = ""
-            rag_context = ""
+        # Check if multi-step reasoning is enabled and needed
+        use_multi_step = (
+            settings.CHATBOT_SETTINGS.multi_step.enabled
+            and "multi_step_orchestrator" in st.session_state
+            and query_classifier.classify_query(prompt) == classifier.QueryComplexity.COMPLEX
+        )
 
-            with st.spinner("Retrieving additional context..."):
-                # Always get web context (independent of RAG)
-                LOGGER.info("Gathering web context.")
-
-                web_context_dict = await web_context_pipeline.gather_web_context(
-                    prompt,
-                    st.session_state.http_client,
-                    enable_web_search=settings.CHATBOT_SETTINGS.search.enabled,
-                    force_web_search=st.session_state.force_web_search,
-                    search_num_results=settings.CHATBOT_SETTINGS.search.num_results,
+        context_text: str | None = ""
+        if use_multi_step:
+            context_text = await _process_multi_step_query(prompt)
+            if context_text:
+                contextualized_prompt = REASONED_CONTEXT_PROMPT_TEMPLATE.format(
+                    prompt=prompt,
+                    reasoning_context=context_text,
                 )
+                contextualized_messages[-1]["content"] = contextualized_prompt
+            else:
+                LOGGER.warning("Multi-step reasoning did not yield any context, falling back to simple context.")
 
-                # If RAG is enabled, retrieve RAG context
-                if settings.CHATBOT_SETTINGS.rag.enabled:
-                    LOGGER.info("Gathering RAG context.")
-                    # Process files through RAG system (if any)
-                    if uploaded_files:
-                        LOGGER.debug(
-                            "Processing uploaded files:\n-%s", "- ".join([file.name for file in uploaded_files])
-                        )
-                        RAG_PROCESSOR.process_uploaded_files(uploaded_files)
-
-                    # Get RAG context from vector database
-                    rag_context_chunks = RAG_PROCESSOR.retrieve(prompt)
-                    rag_context = "\n\n".join(rag_context_chunks) if rag_context_chunks else ""
-
-                # Merge all context sources (web + RAG)
-                context_text = web_context_pipeline.merge_context(web_context_dict, rag_context)
-
+        if not context_text:
+            context_text = await _gather_context_for_simple_query(prompt, uploaded_files, web_context_pipeline)
             if context_text:
-                with st.expander("Relevant Context", expanded=False):
-                    st.text(context_text[: settings.CHATBOT_SETTINGS.context_view_size] + "...")
-
-            # Apply context to prompt if any context was gathered
-            if context_text:
-                contextualized_prompt = PROMPT_TEMPLATE.format(context=context_text, prompt=prompt)
+                contextualized_prompt = SIMPLE_CONTEXT_PROMPT_TEMPLATE.format(context=context_text, prompt=prompt)
                 contextualized_messages[-1]["content"] = contextualized_prompt
 
         # Stream the response from the LLM
-        with st.chat_message("assistant"):
-            response = st.write_stream(chat.stream_response(contextualized_messages, st.session_state.openai_client))
-            if isinstance(response, str):
-                st.session_state.messages.append(constants.Message(role="assistant", content=response))
-            else:
-                raise TypeError(f"Expected response to be str, got {type(response).__name__}")
+        chat_container = st.chat_message("assistant")
+        response_content = await chat.stream_response(contextualized_messages, openai_client, chat_container)
+
+        if isinstance(response_content, str):
+            st.session_state.messages.append(constants.Message(role="assistant", content=response_content))
+        else:
+            error_message = f"Expected response to be str, got {type(response_content).__name__}"
+            raise TypeError(error_message)
 
 
 if __name__ == "__main__":

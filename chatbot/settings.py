@@ -50,7 +50,7 @@ class SearchSettings(pydantic.BaseModel):
     num_results: int = 5
     result_text_max_len: int = 2000  # Maximum length of content from each search result
     trigger_words: list[str] = pydantic.Field(
-        default_factory=lambda: ["latest", "recent", "current", "today", "news", "update", "new"]
+        default_factory=lambda: ["latest", "recent", "current", "today", "news", "update", "new"],
     )
 
     # Search result processing settings
@@ -59,12 +59,62 @@ class SearchSettings(pydantic.BaseModel):
     max_concurrent_fetches: int = 5  # Maximum concurrent URL fetches
 
 
+class MultiStepReasoningSettings(pydantic.BaseModel):
+    """Settings for multi-step reasoning orchestration."""
+
+    enabled: bool = False
+    use_graph_orchestrator: bool = True  # Feature flag for LangGraph vs original orchestrator
+    max_steps: int = 5
+    planning_temperature: float = 0.3
+    step_timeout: int = 30
+    search_top_k: int = 2
+    max_context_tokens: int = 4000
+
+    # Context compression settings
+    enable_context_compression: bool = True
+    summary_max_tokens: int = 600  # Max tokens for step summaries
+    compression_temperature: float = 0.1  # Low temperature for consistent summaries
+    keep_recent_steps_detailed: int = 2  # Keep last N steps with full content
+    relevance_threshold: float = 0.7  # Minimum relevance score to keep content
+
+    # Query complexity classification
+    complex_query_keywords: list[str] = pydantic.Field(
+        default_factory=lambda: [
+            "compare",
+            "vs",
+            "versus",
+            "analyze",
+            "investigation",
+            "investigate",
+            "timeline",
+            "history",
+            "caused",
+            "impact",
+            "implications",
+            "relationship",
+            "difference",
+            "similarity",
+            "pros and cons",
+            "advantages",
+            "disadvantages",
+            "deeply",
+            "comprehensively",
+            "detailed",
+        ],
+    )
+
+    # Entity counting threshold - queries with multiple entities are often complex
+    multi_entity_threshold: int = 5
+
+
 class Settings(pydantic_settings.BaseSettings):
     """Configuration settings for the chatbot application."""
 
     openai_api_base: str = "http://localhost:8000/v1"
     openai_api_key: str = "not-needed"
-    llm_model_name: str = "Qwen/Qwen2.5-Coder-7B-Instruct-AWQ"
+    llm_model_name: str = "openai/gpt-oss-20b"
+    # Pin HF model revision to avoid unsafe downloads
+    llm_model_revision: str = "main"
     temperature: float = 0.7
     max_tokens: int = 2000
     repetition_penalty: float = 1.1
@@ -75,6 +125,7 @@ class Settings(pydantic_settings.BaseSettings):
     qdrant: QdrantSettings = pydantic.Field(default_factory=QdrantSettings)
     rag: RAGSettings = pydantic.Field(default_factory=RAGSettings)
     search: SearchSettings = pydantic.Field(default_factory=SearchSettings)
+    multi_step: MultiStepReasoningSettings = pydantic.Field(default_factory=MultiStepReasoningSettings)
     context_view_size: int = 1000
 
     class Config:
