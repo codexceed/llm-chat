@@ -277,7 +277,9 @@ class GraphOrchestrator:
 
         # Update UI status
         if self._status_ui:
-            self._status_ui.update(label=f"Executing step {step_num}/{total_steps}: {current_step.step_type.value}", expanded=True)
+            self._status_ui.update(
+                label=f"Executing step {step_num}/{total_steps}: {current_step.step_type.value}", state="running", expanded=True
+            )
 
         st.write(f"\n▶ Step {step_num}: {current_step.step_type.value.upper()} — query: {current_step.query}")
 
@@ -355,7 +357,9 @@ class GraphOrchestrator:
         # Update UI status
         # status_ui now accessed via self._status_ui
         if self._status_ui:
-            self._status_ui.update(label=f"Executing step {step_num}/{total_steps}: {current_step.step_type.value}", expanded=True)
+            self._status_ui.update(
+                label=f"Executing step {step_num}/{total_steps}: {current_step.step_type.value}", state="running", expanded=True
+            )
 
         st.write(f"\n▶ Step {step_num}: {current_step.step_type.value.upper()} — query: {current_step.query}")
 
@@ -460,7 +464,9 @@ class GraphOrchestrator:
         # Update UI status
         # status_ui now accessed via self._status_ui
         if self._status_ui:
-            self._status_ui.update(label=f"Executing step {step_num}/{total_steps}: {current_step.step_type.value}", expanded=True)
+            self._status_ui.update(
+                label=f"Executing step {step_num}/{total_steps}: {current_step.step_type.value}", state="running", expanded=True
+            )
 
         st.write(f"\n▶ Step {step_num}: {current_step.step_type.value.upper()} — query: {current_step.query}")
 

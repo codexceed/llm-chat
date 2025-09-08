@@ -106,15 +106,12 @@ async def _process_multi_step_query(prompt: str) -> str | None:
     with st.status("Planning multi-step reasoning…", state="running", expanded=False) as status_ui:
         if isinstance(multi_step_orchestrator, graph_orchestrator.GraphOrchestrator):
             LOGGER.info("Using LangGraph-based orchestrator")
-            reasoned_context = await multi_step_orchestrator.execute_complex_query(prompt, status_ui)
-        else:
-            # Original orchestrator
-            reasoned_context = await multi_step_orchestrator.execute_complex_query(prompt, status_ui)
+        reasoned_context = await multi_step_orchestrator.execute_complex_query(prompt, status_ui)
 
         # Finalize visual status (only if not already finalized by orchestrator)
-        if reasoned_context and status_ui.state != "complete":
-            status_ui.update(label="Multi-step reasoning complete.", state="complete", expanded=False)
-        elif not reasoned_context and status_ui.state != "error":
+        if reasoned_context and status_ui._current_state != "complete":  # pylint: disable=protected-access
+            status_ui.update(label="Multi-step reasoning complete.", state="complete", expanded=False)  # pylint: disable=protected-access
+        elif not reasoned_context and status_ui._current_state != "error":
             status_ui.update(
                 label="Multi-step reasoning produced no context; falling back.",
                 state="error",
