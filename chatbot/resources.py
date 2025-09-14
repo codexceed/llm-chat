@@ -1,8 +1,8 @@
 """Shared or re-usable resources for the chatbot application."""
 
-import sentence_transformers
 import streamlit as st
 import transformers
+from llama_index.embeddings import huggingface
 
 from chatbot import rag, settings
 
@@ -32,12 +32,13 @@ def get_tokenizer() -> transformers.PreTrainedTokenizerFast:
 
 
 @st.cache_resource
-def get_embedding_model() -> sentence_transformers.SentenceTransformer:
+def get_embedding_model() -> huggingface.HuggingFaceEmbedding:
     """Get cached embedding model for similarity computation.
 
     Returns:
         Embedding model instance
     """
-    model = sentence_transformers.SentenceTransformer(settings.CHATBOT_SETTINGS.rag.embedding_model)
-    model.eval()
-    return model
+    return huggingface.HuggingFaceEmbedding(
+        model_name=settings.CHATBOT_SETTINGS.rag.embedding_model,
+        device=settings.CHATBOT_SETTINGS.rag.device,
+    )
