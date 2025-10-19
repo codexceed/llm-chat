@@ -14,7 +14,7 @@ authors = [
 license = {text = "MIT"}
 keywords = ["chatbot", "streamlit", "ai"]
 dependencies = [
-  "streamlit~=1.49.1",
+  "streamlit~=1.50.0",
   "pydantic-settings~=2.10.1",
   "openai~=1.107.0",
   "llama-index~=0.14.2",
